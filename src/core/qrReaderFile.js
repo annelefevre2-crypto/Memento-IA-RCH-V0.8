@@ -6,39 +6,28 @@ export async function readQrFromFile(file) {
   }
 
   if (!window.QrScanner) {
-    throw new Error("QrScanner n'est pas chargé.");
+    throw new Error("QrScanner n'est pas disponible.");
   }
 
-  // Convertir le fichier en URL d'image (méthode la plus stable)
-  const imageUrl = URL.createObjectURL(file);
-
-  let result;
-  try {
-    result = await window.QrScanner.scanImage(imageUrl, {
-      returnDetailedScanResult: true
-    });
-  } catch (err) {
-    console.error("⚠️ Erreur scanImage :", err);
-    throw new Error("Impossible de lire le QR dans cette image.");
-  }
+  // Lecture du QR dans l'image
+  const result = await window.QrScanner.scanImage(file, {
+    returnDetailedScanResult: true
+  });
 
   if (!result?.data) {
     throw new Error("Aucun QR détecté dans l'image.");
   }
 
-  // Décompression et décodage
-  let compressed;
-  try {
-    compressed = JSON.parse(result.data);
-  } catch (err) {
-    console.error("⚠️ JSON du QR illisible :", result.data);
-    throw new Error("Les données du QR ne sont pas un JSON valide.");
-  }
+  const raw = (result.data || "").trim();
+  console.log("Données brutes du QR :", raw);
 
-  try {
-    return decodeFiche(compressed);
-  } catch (err) {
-    console.error("⚠️ Erreur lors de decodeFiche :", err);
-    throw new Error("Échec de la décompression de la fiche.");
-  }
+  // ❌ AVANT : on essayait de faire JSON.parse(raw)
+  // const compressed = JSON.parse(result.data);
+
+  // ✅ MAINTENANT : on passe directement la chaîne à decodeFiche
+  //    decodeFiche sait gérer les formats "1:...." ou "1m:...."
+  const fiche = decodeFiche(raw);
+
+  console.log("Fiche décodée depuis le QR :", fiche);
+  return fiche;
 }
