@@ -1,5 +1,7 @@
 import { validateFiche } from "./src/core/jsonSchema.js";
 import { buildVariablesUI, getValues, generatePrompt } from "./src/core/variables.js";
+import { encodeFiche, decodeFiche } from "./src/core/compression.js";
+
 
 document.addEventListener("DOMContentLoaded", () => {
 
