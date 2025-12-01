@@ -22,7 +22,7 @@ function computeECC(len) {
 }
 
 // ===================================================================
-// Fonction principale : Générer un QR
+// Fonction principale : Générer un QR Code
 // ===================================================================
 export function generateQrForFiche(fiche, containerId) {
   if (!fiche) throw new Error("Aucune fiche fournie à generateQrForFiche()");
@@ -31,24 +31,25 @@ export function generateQrForFiche(fiche, containerId) {
   const container = document.getElementById(containerId);
   if (!container) throw new Error(`Impossible de trouver ${containerId}`);
 
-  container.innerHTML = ""; // reset
+  // Nettoyage du conteneur
+  container.innerHTML = "";
 
-  // Étape 1 : compression
+  // Étape 1 — Compression
   const encoded = encodeFiche(fiche);
   const payload = JSON.stringify(encoded);
-  
-  // Étape 2 : taille + ECC adaptées
+
+  // Étape 2 — Taille + ECC
   const qrSize = computeQrSize(payload.length);
   const ecc = computeECC(payload.length);
 
-  // Étape 3 : génération du QR
+  // Étape 3 — Génération du QR
   const qr = new QRCode(container, {
     text: payload,
     width: qrSize,
     height: qrSize,
     colorDark: "#000000",
     colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel[ecc] // L/M/Q/H
+    correctLevel: QRCode.CorrectLevel[ecc] // L / M / Q / H
   });
 
   return qr;
