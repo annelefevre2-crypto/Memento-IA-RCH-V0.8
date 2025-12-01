@@ -120,6 +120,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  console.log("Type du fichier :", file);
+console.log(file instanceof File);
+
 
   // ================================================================
   // 5) Lecture QR via fichier image (Module A)
