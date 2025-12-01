@@ -6,6 +6,24 @@ import { buildVariablesUI, getValues, generatePrompt } from "./src/core/variable
 import { encodeFiche, decodeFiche } from "./src/core/compression.js";
 import { generateQrForFiche } from "./src/core/qrWriter.js";
 import { readQrFromFile } from "./src/core/qrReaderFile.js";
+import { compactFiche, encodeFiche } from "./src/core/compression.js";
+
+function computeQrFeasibility(fiche) {
+  const compact = compactFiche(fiche);
+  const json = JSON.stringify(compact);
+  const deflated = pako.deflate(json);
+  const base64 = btoa(String.fromCharCode(...deflated));
+
+  const finalLength = ("1:" + base64).length;
+
+  return {
+    compactSize: json.length,
+    compressedSize: deflated.length,
+    qrPayload: finalLength,
+    fitsInSingleQR: finalLength <= 1800
+  };
+}
+
 
 // ================================================================
 // Exposition console pour tests
