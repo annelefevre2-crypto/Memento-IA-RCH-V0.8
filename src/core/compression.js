@@ -1,13 +1,10 @@
 // =====================================================================
 // compression.js — Module DEFLATE + Base64 pour QR Codes
-// Format enveloppe : { z: "pako-base64-v1", d: "<base64>" }
-// Dépendance : pako (DEFLATE) — à importer dans index.html
 // =====================================================================
 
-// Vérification présence pako
 function ensurePako() {
   if (typeof pako === "undefined") {
-    throw new Error("Pako (DEFLATE) n'est pas chargé. Ajoutez : <script src='https://unpkg.com/pako@2.1.0/dist/pako.min.js'></script>");
+    throw new Error("Pako (DEFLATE) n'est pas chargé.");
   }
 }
 
@@ -40,7 +37,7 @@ export function decompressToJSON(base64) {
 }
 
 // =============================================================
-// 3. Envelopper les données compressées
+// 3. Envelopper données compressées
 // =============================================================
 export function wrapCompressedData(base64) {
   return {
@@ -50,18 +47,17 @@ export function wrapCompressedData(base64) {
 }
 
 // =============================================================
-// 4. Extraire et décompresser un wrapper
+// 4. Extraire et décompresser
 // =============================================================
 export function unwrapCompressedData(wrapper) {
   if (!wrapper || wrapper.z !== "pako-base64-v1") {
     throw new Error("Format compressé non reconnu");
   }
-
   return decompressToJSON(wrapper.d);
 }
 
 // =============================================================
-// 5. Fonction utilitaire : JSON → Wrapper compressé
+// 5. Encodage complet d’une fiche
 // =============================================================
 export function encodeFiche(json) {
   const base64 = compressJSON(json);
@@ -69,18 +65,16 @@ export function encodeFiche(json) {
 }
 
 // =============================================================
-// 6. Fonction inverse : Wrapper → JSON
+// 6. Décodage complet d’une fiche
 // =============================================================
 export function decodeFiche(wrapper) {
   return unwrapCompressedData(wrapper);
 }
 
 // =============================================================
-// Exposer les fonctions dans window pour tests console
+// 7. Débogage console
 // =============================================================
 if (typeof window !== "undefined") {
   window.encodeFiche = encodeFiche;
   window.decodeFiche = decodeFiche;
 }
-
-
