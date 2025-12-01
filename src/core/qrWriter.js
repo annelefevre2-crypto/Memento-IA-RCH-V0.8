@@ -7,31 +7,36 @@ import { encodeFiche } from "./compression.js";
 // Taille max de payload par QR (hors en-tête multi)
 const MAX_CHARS_PER_QR = 800;
 
-// ------------------------
-// Taille visuelle du QR  — FIX A5
-// ------------------------
-// On impose des tailles beaucoup plus grandes pour lisibilité
+// ===================================================================
+// 1) Taille visuelle du QR — FIX A5
+// ===================================================================
 function computeQrSize(len) {
-  if (len < 200) return 300;     // min 300 px
+  if (len < 200) return 300;
   if (len < 500) return 400;
   if (len < 1200) return 500;
   if (len < 2000) return 600;
-  return 700;                   // QR très denses → 700 px
+  return 700; // QR très denses
 }
 
-// ------------------------
-// Niveau ECC dynamique
-// ------------------------
-function computeECC(len) {
-  if (len < 500) return "M";
-  if (len < 1200) return "Q";
-  return "H";
+// ===================================================================
+// 2) ECC dynamique optimisé (nouvelle stratégie)
+// ===================================================================
+// ECC choisi en fonction de la densité réelle du QR
+// - H si payload léger → robustesse max
+// - Q pour taille moyenne → compromis
+// - M pour payload élevé → lisibilité correcte
+// - null si trop large → multi-QR obligatoire
+function chooseECC(payloadLength) {
+  if (payloadLength <= 1200) return "H";     // très robuste
+  if (payloadLength <= 1800) return "Q";     // bon compromis
+  if (payloadLength <= 2500) return "M";     // encore lisible
+  return null; // > 2500 → fragmentation obligatoire
 }
 
-// ------------------------
-// Ajout d’une bordure blanche obligatoire — FIX A5
-// ------------------------
-function addWhiteBorderToCanvas(canvas, border = 40) {
+// ===================================================================
+// 3) Bordure blanche obligatoire — FIX A5
+// ===================================================================
+function addWhiteBorderToCanvas(canvas, border = 80) {
   const newCanvas = document.createElement("canvas");
   newCanvas.width = canvas.width + border * 2;
   newCanvas.height = canvas.height + border * 2;
@@ -46,16 +51,18 @@ function addWhiteBorderToCanvas(canvas, border = 40) {
   return newCanvas;
 }
 
-// ------------------------
-// Fragmentation de la chaîne encodée
-// ------------------------
+// ===================================================================
+// 4) Fragmentation multi-QR si payload trop long
+// ===================================================================
 function buildQrPayloadsForFiche(fiche, maxCharsPerQr = MAX_CHARS_PER_QR) {
   const encoded = encodeFiche(fiche);
 
+  // cas mono-QR
   if (encoded.length <= maxCharsPerQr) {
     return [encoded];
   }
 
+  // cas multi-QR
   const id = Math.random().toString(36).slice(2, 6);
   const total = Math.ceil(encoded.length / maxCharsPerQr);
   const payloads = [];
@@ -73,7 +80,7 @@ function buildQrPayloadsForFiche(fiche, maxCharsPerQr = MAX_CHARS_PER_QR) {
 }
 
 // ===================================================================
-// Fonction principale : génère 1 ou N QR dans un conteneur
+// 5) Fonction principale : génère 1 ou N QR dans un conteneur
 // ===================================================================
 export function generateQrForFiche(fiche, containerId) {
   if (!fiche) throw new Error("Aucune fiche fournie à generateQrForFiche()");
@@ -86,18 +93,24 @@ export function generateQrForFiche(fiche, containerId) {
 
   const payloads = buildQrPayloadsForFiche(fiche);
 
-  // ===========================
-  // Cas MONO-QR
-  // ===========================
+  // ===================================================================
+  // CAS MONO-QR
+  // ===================================================================
   if (payloads.length === 1) {
     const payload = payloads[0];
+
+    const ecc = chooseECC(payload.length);
+    if (!ecc) {
+      console.warn("❌ Payload trop grand pour un QR unique :", payload.length);
+      return generateMultiQR(payloads, container);
+    }
+
     const size = computeQrSize(payload.length);
-    const ecc = computeECC(payload.length);
 
     const div = document.createElement("div");
     container.appendChild(div);
 
-    // Génération QR brut
+    // QR brut
     new QRCode(div, {
       text: payload,
       width: size,
@@ -107,22 +120,25 @@ export function generateQrForFiche(fiche, containerId) {
       correctLevel: QRCode.CorrectLevel[ecc]
     });
 
-    // Récupération du canvas
     const rawCanvas = div.querySelector("canvas");
-
-    // Ajout d’une large bordure blanche — FIX A5
     const borderedCanvas = addWhiteBorderToCanvas(rawCanvas, 80);
 
-    // Remplacement du QR final
     div.innerHTML = "";
     div.appendChild(borderedCanvas);
 
     return;
   }
 
-  // ===========================
-  // MULTI QR
-  // ===========================
+  // ===================================================================
+  // CAS MULTI-QR
+  // ===================================================================
+  generateMultiQR(payloads, container);
+}
+
+// ===================================================================
+// 6) Génération multi-QR (factorisée)
+// ===================================================================
+function generateMultiQR(payloads, container) {
   const total = payloads.length;
 
   const wrapper = document.createElement("div");
@@ -138,8 +154,8 @@ export function generateQrForFiche(fiche, containerId) {
 
     const qrDiv = document.createElement("div");
 
+    const ecc = chooseECC(payload.length) || "M";
     const size = computeQrSize(payload.length);
-    const ecc = computeECC(payload.length);
 
     new QRCode(qrDiv, {
       text: payload,
@@ -163,7 +179,6 @@ export function generateQrForFiche(fiche, containerId) {
 
     cell.appendChild(qrDiv);
     cell.appendChild(label);
-
     wrapper.appendChild(cell);
   });
 
