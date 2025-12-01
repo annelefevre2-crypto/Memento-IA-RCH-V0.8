@@ -8,14 +8,15 @@ import { generateQrForFiche } from "./src/core/qrWriter.js";
 import { readQrFromFile } from "./src/core/qrReaderFile.js";
 
 // ================================================================
-// Exposition de certaines fonctions pour les tests console
+// Exposition console pour tests
 // ================================================================
 window.encodeFiche = encodeFiche;
 window.decodeFiche = decodeFiche;
 window.generateQrForFiche = generateQrForFiche;
+window.readQrFromFile = readQrFromFile;   // ⚠️ AJOUT OBLIGATOIRE
 
 // ================================================================
-// DOMContentLoaded — initialisation de l'interface
+// DOMContentLoaded
 // ================================================================
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -63,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ------------------------------------------------------------
-  // 2) Lire les valeurs du formulaire
+  // 2) Lire les valeurs
   // ------------------------------------------------------------
   document.getElementById("btnValues").addEventListener("click", () => {
     outputBox.textContent = "";
@@ -76,8 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const vals = getValues(fiche);
-      outputBox.textContent =
-        "✔ Valeurs saisies :\n" + JSON.stringify(vals, null, 2);
+      outputBox.textContent = "✔ Valeurs saisies :\n" + JSON.stringify(vals, null, 2);
     } catch (e) {
       outputBox.textContent = "❌ Erreur : " + e.message;
     }
@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ------------------------------------------------------------
-  // 4) Générer le(s) QR Code(s) pour la fiche en mémoire
+  // 4) Générer QR Code
   // ------------------------------------------------------------
   document.getElementById("btnMakeQR").addEventListener("click", () => {
     const fiche = window.currentFiche;
@@ -123,13 +123,17 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ------------------------------------------------------------
-  // 5) Lecture QR via fichier image (Module A)
+  // 5) Lecture QR via fichier
   // ------------------------------------------------------------
   const qrInput = document.getElementById("qrFileInput");
   const qrOutput = document.getElementById("qrFileResult");
 
+  console.log("qrFileInput trouvé :", qrInput); // DEBUG
+
   if (qrInput) {
+    console.log("Installation du listener change…");
     qrInput.addEventListener("change", async (ev) => {
+      console.log("Listener activé !");
       const file = ev.target.files[0];
       if (!file) return;
 
@@ -137,10 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         const fiche = await readQrFromFile(file);
-
-        qrOutput.textContent =
-          "✔ QR décodé :\n\n" + JSON.stringify(fiche, null, 2);
-
+        qrOutput.textContent = "✔ QR décodé :\n\n" + JSON.stringify(fiche, null, 2);
         window.lastDecodedFiche = fiche;
       } catch (err) {
         console.error(err);
