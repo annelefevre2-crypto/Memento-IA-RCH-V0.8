@@ -74,6 +74,13 @@ document.addEventListener("DOMContentLoaded", () => {
       log("❌ Erreur validation : " + e.message);
       return;
     }
+    
+    const diag = computeQrFeasibility(fiche);
+log(`Taille JSON compacté : ${diag.compactSize} caractères`);
+log(`Taille après DEFLATE : ${diag.compressedSize} bytes`);
+log(`Payload final QR : ${diag.qrPayload} caractères`);
+log(`→ QR unique possible : ${diag.fitsInSingleQR ? "✔ OUI" : "❌ NON (fragmentation requise)"}`);
+
 
     const container = document.getElementById("formContainer");
     buildVariablesUI(container, fiche);
