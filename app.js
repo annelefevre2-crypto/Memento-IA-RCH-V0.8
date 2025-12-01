@@ -2,6 +2,8 @@
 // app.js — Test minimal de l'architecture JSON + variables
 // ====================================================================
 
+console.log(fiche.prompt.variables);
+
 import { validateFiche } from "./src/core/jsonSchema.js";
 import { buildVariablesUI, getValues, generatePrompt } from "./src/core/variables.js";
 
