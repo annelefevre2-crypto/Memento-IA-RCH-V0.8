@@ -7,6 +7,10 @@ import { encodeFiche, decodeFiche } from "./src/core/compression.js";
 import { generateQrForFiche } from "./src/core/qrWriter.js";
 import { readQrFromFile } from "./src/core/qrReaderFile.js";
 
+// Exposition console (uniquement pour tests)
+window.encodeFiche = encodeFiche;
+window.decodeFiche = decodeFiche;
+
 
 // ================================================================
 // DOMContentLoaded — tout le code est initialisé ici
