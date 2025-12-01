@@ -43,6 +43,11 @@
       <button id="btnMakeQR">Générer le QR Code</button>
     <div id="qrContainer" style="margin-top:20px;"></div>
     <section>
+          <h2>Lecture d’un QR Code (fichier image)</h2>
+          <input type="file" id="qrFileInput" accept="image/*" />
+          <pre id="qrFileResult"></pre>
+</section>
+
   </main>
 <script type="module">
   import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
