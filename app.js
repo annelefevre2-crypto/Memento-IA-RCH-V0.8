@@ -2,97 +2,102 @@
 // app.js — Test minimal de l'architecture JSON + variables
 // ====================================================================
 
-console.log(fiche.prompt.variables);
-
 import { validateFiche } from "./src/core/jsonSchema.js";
 import { buildVariablesUI, getValues, generatePrompt } from "./src/core/variables.js";
 
-const logBox = document.getElementById("log");
-const outputBox = document.getElementById("output");
+// ============================================================
+// IMPORTANT : attendre que le DOM soit complètement chargé
+// ============================================================
+document.addEventListener("DOMContentLoaded", () => {
 
-function log(msg) {
-  logBox.textContent += msg + "\n";
-}
+  const logBox = document.getElementById("log");
+  const outputBox = document.getElementById("output");
 
-// ====================================================================
-// 1. Charger + valider la fiche JSON entrée par l'utilisateur
-// ====================================================================
-document.getElementById("btnLoad").addEventListener("click", () => {
-  logBox.textContent = "";
-  outputBox.textContent = "";
-
-  let raw = document.getElementById("jsonInput").value.trim();
-  if (!raw) {
-    log("❌ Erreur : aucun JSON fourni.");
-    return;
+  function log(msg) {
+    logBox.textContent += msg + "\n";
   }
 
-  let fiche = null;
+  // ====================================================================
+  // 1. Charger + valider la fiche JSON entrée par l'utilisateur
+  // ====================================================================
+  document.getElementById("btnLoad").addEventListener("click", () => {
+    logBox.textContent = "";
+    outputBox.textContent = "";
 
-  // Tentative de parsing JSON
-  try {
-    fiche = JSON.parse(raw);
-  } catch (e) {
-    log("❌ JSON invalide : " + e.message);
-    return;
-  }
+    let raw = document.getElementById("jsonInput").value.trim();
+    if (!raw) {
+      log("❌ Erreur : aucun JSON fourni.");
+      return;
+    }
 
-  // Validation via jsonSchema.js
-  try {
-    validateFiche(fiche);
-    log("✔ Fiche JSON valide !");
-  } catch (e) {
-    log("❌ Erreur validation : " + e.message);
-    return;
-  }
+    let fiche = null;
 
-  // Génération du formulaire
-  const container = document.getElementById("formContainer");
-  buildVariablesUI(container, fiche);
+    // Tentative de parsing JSON
+    try {
+      fiche = JSON.parse(raw);
+    } catch (e) {
+      log("❌ JSON invalide : " + e.message);
+      return;
+    }
 
-  // Stocker la fiche en mémoire pour les actions suivantes
-  window.currentFiche = fiche;
-});
+    // Validation via jsonSchema.js
+    try {
+      validateFiche(fiche);
+      log("✔ Fiche JSON valide !");
+    } catch (e) {
+      log("❌ Erreur validation : " + e.message);
+      return;
+    }
 
+    // Génération du formulaire
+    const container = document.getElementById("formContainer");
+    buildVariablesUI(container, fiche);
 
-// ====================================================================
-// 2. Lire les valeurs saisies dans le formulaire
-// ====================================================================
-document.getElementById("btnValues").addEventListener("click", () => {
-  outputBox.textContent = "";
-
-  const fiche = window.currentFiche;
-  if (!fiche) {
-    outputBox.textContent = "❌ Aucune fiche chargée.";
-    return;
-  }
-
-  try {
-    const vals = getValues(fiche);
-    outputBox.textContent = "✔ Valeurs saisies :\n" + JSON.stringify(vals, null, 2);
-  } catch (e) {
-    outputBox.textContent = "❌ Erreur : " + e.message;
-  }
-});
+    // Stocker la fiche en mémoire pour les actions suivantes
+    window.currentFiche = fiche;
+  });
 
 
-// ====================================================================
-// 3. Générer le prompt final avec {{variables}}
-// ====================================================================
-document.getElementById("btnPrompt").addEventListener("click", () => {
-  outputBox.textContent = "";
+  // ====================================================================
+  // 2. Lire les valeurs saisies dans le formulaire
+  // ====================================================================
+  document.getElementById("btnValues").addEventListener("click", () => {
+    outputBox.textContent = "";
 
-  const fiche = window.currentFiche;
-  if (!fiche) {
-    outputBox.textContent = "❌ Aucune fiche chargée.";
-    return;
-  }
+    const fiche = window.currentFiche;
+    if (!fiche) {
+      outputBox.textContent = "❌ Aucune fiche chargée.";
+      return;
+    }
 
-  try {
-    const vals = getValues(fiche);
-    const prompt = generatePrompt(fiche, vals);
-    outputBox.textContent = "✔ Prompt généré :\n\n" + prompt;
-  } catch (e) {
-    outputBox.textContent = "❌ Erreur : " + e.message;
-  }
+    try {
+      const vals = getValues(fiche);
+      outputBox.textContent = "✔ Valeurs saisies :\n" + JSON.stringify(vals, null, 2);
+    } catch (e) {
+      outputBox.textContent = "❌ Erreur : " + e.message;
+    }
+  });
+
+
+  // ====================================================================
+  // 3. Générer le prompt final avec {{variables}}
+  // ====================================================================
+  document.getElementById("btnPrompt").addEventListener("click", () => {
+    outputBox.textContent = "";
+
+    const fiche = window.currentFiche;
+    if (!fiche) {
+      outputBox.textContent = "❌ Aucune fiche chargée.";
+      return;
+    }
+
+    try {
+      const vals = getValues(fiche);
+      const prompt = generatePrompt(fiche, vals);
+      outputBox.textContent = "✔ Prompt généré :\n\n" + prompt;
+    } catch (e) {
+      outputBox.textContent = "❌ Erreur : " + e.message;
+    }
+  });
+
 });
