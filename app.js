@@ -10,7 +10,7 @@ import { encodeFiche, decodeFiche } from "./src/core/compression.js";
 import { generateQrForFiche } from "./src/core/qrWriter.js";
 import { readQrFromFile } from "./src/core/qrReaderFile.js";
 
-// 2) Exposition pour tests console (optionnel mais pratique)
+// Exposition pour tests console
 window.encodeFiche = encodeFiche;
 window.decodeFiche = decodeFiche;
 window.generateQrForFiche = generateQrForFiche;
@@ -67,7 +67,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       let fiche = null;
 
-      // Parsing JSON sécurisé
       try {
         fiche = JSON.parse(raw);
       } catch (e) {
@@ -79,7 +78,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       console.log("📌 JSON parsé :", fiche);
 
-      // Vérification structure minimale
       if (!fiche.prompt || !Array.isArray(fiche.prompt.variables)) {
         alert("❌ Structure JSON invalide : 'prompt.variables' manquant.");
         log("❌ Structure JSON incompatible : prompt.variables introuvable.");
@@ -87,7 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Validation via jsonSchema
       try {
         validateFiche(fiche);
         log("✔ Fiche JSON valide !");
@@ -96,7 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Génération du formulaire de variables
       const container = document.getElementById("formContainer");
       if (container) {
         console.log("🛠️ Génération UI variables…");
@@ -207,4 +203,5 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
 });
