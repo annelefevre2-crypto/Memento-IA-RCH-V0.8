@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mémento IA – RCH (Version minimale)</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header>
+    <h1>Mémento IA – RCH : Test du moteur JSON + variables</h1>
+  </header>
+
+  <main>
+
+    <!-- Chargement d’une fiche JSON -->
+    <section>
+      <h2>1. Charger une fiche JSON</h2>
+      <textarea id="jsonInput" placeholder="Colle ici une fiche JSON lisible…" rows="10"></textarea>
+      <br />
+      <button id="btnLoad">Charger & Valider la fiche</button>
+      <pre id="log"></pre>
+    </section>
+
+    <hr />
+
+    <!-- Formulaire généré -->
+    <section>
+      <h2>2. Variables de la fiche</h2>
+      <div id="formContainer"></div>
+    </section>
+
+    <hr />
+
+    <!-- Actions -->
+    <section>
+      <h2>3. Actions</h2>
+      <button id="btnValues">Lire les valeurs</button>
+      <button id="btnPrompt">Générer le prompt final</button>
+
+      <h3>Résultat :</h3>
+      <pre id="output"></pre>
+    </section>
+
+  </main>
+
+  <script type="module" src="./app.js"></script>
+
+</body>
+</html>
