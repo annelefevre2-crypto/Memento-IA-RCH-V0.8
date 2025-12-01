@@ -1,5 +1,6 @@
 // ================================================================
 // app.js — Version stable test moteur JSON + variables + QR
+// + version instrumentée (diagnostic & protections)
 // ================================================================
 
 // 1) Imports des modules de base
@@ -15,9 +16,20 @@ window.decodeFiche = decodeFiche;
 window.generateQrForFiche = generateQrForFiche;
 
 // ================================================================
+// Gestion globale des erreurs silencieuses
+// ================================================================
+window.addEventListener("error", (e) => {
+  alert("💥 Erreur JS globale : " + e.message);
+  console.error("Erreur JS globale :", e);
+});
+
+// ================================================================
 // Initialisation après chargement du DOM
 // ================================================================
 document.addEventListener("DOMContentLoaded", () => {
+
+  console.log("🔧 App.js chargé — DOMContentLoaded OK");
+
   const logBox = document.getElementById("log");
   const outputBox = document.getElementById("output");
 
@@ -30,8 +42,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // 1) Charger + valider la fiche JSON
   // ------------------------------------------------------------
   const btnLoad = document.getElementById("btnLoad");
+  console.log("🔧 bouton load =", btnLoad);
+
   if (btnLoad) {
     btnLoad.addEventListener("click", () => {
+      console.log("🔵 Clic détecté sur Charger & Valider");
+
       if (logBox) logBox.textContent = "";
       if (outputBox) outputBox.textContent = "";
 
@@ -42,6 +58,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       let raw = input.value.trim();
+      console.log("🔍 Contenu JSON collé :", raw);
+
       if (!raw) {
         log("❌ Erreur : aucun JSON fourni.");
         return;
@@ -49,11 +67,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
       let fiche = null;
 
-      // Parsing JSON
+      // Parsing JSON sécurisé
       try {
         fiche = JSON.parse(raw);
       } catch (e) {
+        console.error("❌ Exception JSON.parse :", e);
+        alert("Erreur JSON.parse : " + e.message);
         log("❌ JSON invalide : " + e.message);
+        return;
+      }
+
+      console.log("📌 JSON parsé :", fiche);
+
+      // Vérification structure minimale
+      if (!fiche.prompt || !Array.isArray(fiche.prompt.variables)) {
+        alert("❌ Structure JSON invalide : 'prompt.variables' manquant.");
+        log("❌ Structure JSON incompatible : prompt.variables introuvable.");
+        console.error("Structure JSON incorrecte :", fiche);
         return;
       }
 
@@ -69,10 +99,17 @@ document.addEventListener("DOMContentLoaded", () => {
       // Génération du formulaire de variables
       const container = document.getElementById("formContainer");
       if (container) {
-        buildVariablesUI(container, fiche);
+        console.log("🛠️ Génération UI variables…");
+        try {
+          buildVariablesUI(container, fiche);
+        } catch (e) {
+          alert("❌ Erreur lors de la construction du formulaire : " + e.message);
+          console.error(e);
+          return;
+        }
       }
 
-      // Stockage global pour les autres actions
+      console.log("💾 Fiche stockée dans window.currentFiche");
       window.currentFiche = fiche;
     });
   }
@@ -87,18 +124,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const fiche = window.currentFiche;
       if (!fiche) {
-        if (outputBox) outputBox.textContent = "❌ Aucune fiche chargée.";
+        outputBox.textContent = "❌ Aucune fiche chargée.";
         return;
       }
 
       try {
         const vals = getValues(fiche);
-        if (outputBox) {
-          outputBox.textContent =
-            "✔ Valeurs saisies :\n" + JSON.stringify(vals, null, 2);
-        }
+        outputBox.textContent =
+          "✔ Valeurs saisies :\n" + JSON.stringify(vals, null, 2);
       } catch (e) {
-        if (outputBox) outputBox.textContent = "❌ Erreur : " + e.message;
+        outputBox.textContent = "❌ Erreur : " + e.message;
       }
     });
   }
@@ -113,24 +148,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const fiche = window.currentFiche;
       if (!fiche) {
-        if (outputBox) outputBox.textContent = "❌ Aucune fiche chargée.";
+        outputBox.textContent = "❌ Aucune fiche chargée.";
         return;
       }
 
       try {
         const vals = getValues(fiche);
         const prompt = generatePrompt(fiche, vals);
-        if (outputBox) {
-          outputBox.textContent = "✔ Prompt généré :\n\n" + prompt;
-        }
+        outputBox.textContent = "✔ Prompt généré :\n\n" + prompt;
       } catch (e) {
-        if (outputBox) outputBox.textContent = "❌ Erreur : " + e.message;
+        outputBox.textContent = "❌ Erreur : " + e.message;
       }
     });
   }
 
   // ------------------------------------------------------------
-  // 4) Générer le QR Code pour la fiche
+  // 4) Générer le QR Code
   // ------------------------------------------------------------
   const btnMakeQR = document.getElementById("btnMakeQR");
   if (btnMakeQR) {
