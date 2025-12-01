@@ -75,6 +75,12 @@ export function decodeFiche(wrapper) {
   return unwrapCompressedData(wrapper);
 }
 
-window.encodeFiche = encodeFiche;
-window.decodeFiche = decodeFiche;
+// =============================================================
+// Exposer les fonctions dans window pour tests console
+// =============================================================
+if (typeof window !== "undefined") {
+  window.encodeFiche = encodeFiche;
+  window.decodeFiche = decodeFiche;
+}
+
 
