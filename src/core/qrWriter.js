@@ -15,11 +15,12 @@ function computeQrSize(len) {
 
 // Déterminer ECC automatiquement
 function computeECC(len) {
-  if (len < 500) return "H";   // très robuste
+  if (len < 500) return "M";   // petits QR => faible densité
   if (len < 1500) return "Q";
-  if (len < 2500) return "M";
-  return "L"; // nécessaire quand dataset est long
+  if (len < 2500) return "H";
+  return "H";
 }
+
 
 // ===================================================================
 // Fonction principale : Générer un QR Code
