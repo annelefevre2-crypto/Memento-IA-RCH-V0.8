@@ -31,8 +31,9 @@ function ensurePako() {
 // ------------------------------------------------------
 export function encodeFiche(fiche) {
   ensurePako();
+const compact = compactFiche(fiche);
+const json = JSON.stringify(compact);
 
-  const jsonStr = JSON.stringify(fiche);
 
   // DEFLATE
   const deflated = pako.deflate(jsonStr, { level: 9 });
