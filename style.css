@@ -1,0 +1,23 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background: #f3f4f6;
+}
+
+h1 {
+  background: #001F8F;
+  color: white;
+  padding: 10px;
+}
+
+textarea {
+  width: 100%;
+  font-family: monospace;
+}
+
+pre {
+  background: #111;
+  color: #0f0;
+  padding: 10px;
+  overflow-x: auto;
+}
