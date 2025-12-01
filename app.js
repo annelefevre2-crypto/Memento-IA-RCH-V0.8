@@ -3,6 +3,7 @@ import { buildVariablesUI, getValues, generatePrompt } from "./src/core/variable
 import { encodeFiche, decodeFiche } from "./src/core/compression.js";
 
 
+
 document.addEventListener("DOMContentLoaded", () => {
 
   const logBox = document.getElementById("log");
