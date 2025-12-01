@@ -1,1 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test des modules JSON + Variables</title>
+</head>
+
+<body>
+  <h1>Test des modules JSON + Variables</h1>
+
+  <div id="form"></div>
+
+  <button id="btn-validate">Valider JSON</button>
+  <button id="btn-values">Lire valeurs</button>
+  <button id="btn-prompt">Générer prompt</button>
+
+  <pre id="log"></pre>
+
+  <script type="module">
+    import { validateFiche, toCompact, fromCompact } from "../src/core/jsonSchema.js";
+    import { buildVariablesUI, getValues, generatePrompt } from "../src/core/variables.js";
+
+    const log = (msg) => {
+      document.getElementById("log").textContent += msg + "\\n";
+    };
+
+    // ---- Exemple de fiche JSON à tester ----
+    const fiche = {
+      v: "1.0",
+      category: "analyse_documentaire",
+      meta: {
+        title: "Fiche test",
+        author: "Cdt Tirelle",
+        created: "2025-12-01"
+      },
+      prompt: {
+        base: "Produit : {{prod}}, Quantité : {{qty}}",
+        variables: [
+          { id: "prod", label: "Produit concerné", type: "text", required: true },
+          { id: "qty",  label: "Quantité estimée", type: "number" },
+          { id: "type_analyse", label: "Type d'analyse", type: "select",
+            options: ["RCH3", "RCH4"], required: false }
+        ]
+      },
+      ai: { mistral: 3, chatgpt: 2, perplexity: 1 }
+    };
+
+    // ---- TEST 1 : Validation JSON ----
+    document.getElementById("btn-validate").addEventListener("click", () => {
+      try {
+        validateFiche(fiche);
+        log("✔ JSON valide !");
+      } catch (e) {
+        log("❌ Erreur : " + e.message);
+      }
+    });
+
+    // ---- TEST 2 : Générer formulaire ----
+    buildVariablesUI(document.getElementById("form"), fiche);
+
+    // ---- TEST 3 : Lire valeurs ----
+    document.getElementById("btn-values").addEventListener("click", () => {
+      try {
+        const vals = getValues(fiche);
+        log("✔ Valeurs : " + JSON.stringify(vals, null, 2));
+      } catch (e) {
+        log("❌ Erreur : " + e.message);
+      }
+    });
+
+    // ---- TEST 4 : Générer prompt ----
+    document.getElementById("btn-prompt").addEventListener("click", () => {
+      try {
+        const vals = getValues(fiche);
+        const p = generatePrompt(fiche, vals);
+        log("✔ Prompt généré : " + p);
+      } catch (e) {
+        log("❌ Erreur : " + e.message);
+      }
+    });
+  </script>
+</body>
+</html>
 
