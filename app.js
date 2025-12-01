@@ -7,13 +7,15 @@ import { encodeFiche, decodeFiche } from "./src/core/compression.js";
 import { generateQrForFiche } from "./src/core/qrWriter.js";
 import { readQrFromFile } from "./src/core/qrReaderFile.js";
 
-// Exposition console (uniquement pour tests)
+// ================================================================
+// Exposition de certaines fonctions pour les tests console
+// ================================================================
 window.encodeFiche = encodeFiche;
 window.decodeFiche = decodeFiche;
-
+window.generateQrForFiche = generateQrForFiche;
 
 // ================================================================
-// DOMContentLoaded — tout le code est initialisé ici
+// DOMContentLoaded — initialisation de l'interface
 // ================================================================
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -24,9 +26,9 @@ document.addEventListener("DOMContentLoaded", () => {
     logBox.textContent += msg + "\n";
   }
 
-  // ================================================================
+  // ------------------------------------------------------------
   // 1) Charger + valider la fiche JSON
-  // ================================================================
+  // ------------------------------------------------------------
   document.getElementById("btnLoad").addEventListener("click", () => {
     logBox.textContent = "";
     outputBox.textContent = "";
@@ -54,17 +56,15 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Construction du formulaire variables
     const container = document.getElementById("formContainer");
     buildVariablesUI(container, fiche);
 
     window.currentFiche = fiche;
   });
 
-
-  // ================================================================
+  // ------------------------------------------------------------
   // 2) Lire les valeurs du formulaire
-  // ================================================================
+  // ------------------------------------------------------------
   document.getElementById("btnValues").addEventListener("click", () => {
     outputBox.textContent = "";
 
@@ -83,10 +83,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-
-  // ================================================================
+  // ------------------------------------------------------------
   // 3) Générer le prompt final
-  // ================================================================
+  // ------------------------------------------------------------
   document.getElementById("btnPrompt").addEventListener("click", () => {
     outputBox.textContent = "";
 
@@ -105,10 +104,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-
-  // ================================================================
-  // 4) Générer le QR CODE (module QRWriter)
-  // ================================================================
+  // ------------------------------------------------------------
+  // 4) Générer le(s) QR Code(s) pour la fiche en mémoire
+  // ------------------------------------------------------------
   document.getElementById("btnMakeQR").addEventListener("click", () => {
     const fiche = window.currentFiche;
     if (!fiche) {
@@ -124,13 +122,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  console.log("Type du fichier :", file);
-console.log(file instanceof File);
-
-
-  // ================================================================
+  // ------------------------------------------------------------
   // 5) Lecture QR via fichier image (Module A)
-  // ================================================================
+  // ------------------------------------------------------------
   const qrInput = document.getElementById("qrFileInput");
   const qrOutput = document.getElementById("qrFileResult");
 
@@ -147,13 +141,11 @@ console.log(file instanceof File);
         qrOutput.textContent =
           "✔ QR décodé :\n\n" + JSON.stringify(fiche, null, 2);
 
-        // Option : stocker la fiche décodée
         window.lastDecodedFiche = fiche;
-
       } catch (err) {
-        qrOutput.textContent = "❌ Erreur : " + err.message;
+        console.error(err);
+        qrOutput.textContent = "❌ Erreur : " + (err.message || err);
       }
     });
   }
-
-}); // fin DOMContentLoaded
+});
