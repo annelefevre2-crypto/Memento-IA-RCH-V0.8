@@ -40,8 +40,8 @@ export function encodeFiche(fiche) {
   }
 
   const compact = toCompact(fiche);
-
   const jsonString = JSON.stringify(compact);
+
   if (jsonString.length > MAX_JSON_CHARS) {
     throw new Error(`JSON trop long (${jsonString.length} chars) > ${MAX_JSON_CHARS}`);
   }
@@ -74,21 +74,23 @@ export function encodeFiche(fiche) {
 // ------------------------------------------------------
 function normaliseWrapper(raw) {
   if (raw && typeof raw === "object") {
-    if (!raw.d) throw new Error("Wrapper JSON invalide : champ 'd' manquant");
+    if (!raw.d) {
+      throw new Error("Wrapper JSON invalide : champ 'd' manquant");
+    }
     return raw;
   }
 
-  if (typeof raw !== "string") throw new Error("QR non reconnu");
+  if (typeof raw !== "string") {
+    throw new Error("QR non reconnu");
+  }
 
   const text = raw.trim();
 
-  // JSON wrapper ?
   try {
     const parsed = JSON.parse(text);
     if (parsed && parsed.d) return parsed;
   } catch (_) {}
 
-  // Sinon : legacy Base64
   return {
     z: "legacy",
     d: text
@@ -104,11 +106,23 @@ export function decodeFiche(raw) {
   }
 
   const wrapper = normaliseWrapper(raw);
-
   const deflated = base64ToUint8(wrapper.d);
 
   let inflated;
   try {
     inflated = window.pako.inflate(deflated);
   } catch (e) {
-    throw new Error("Erreur DEFLAT
+    throw new Error("Erreur DEFLATE : " + e.message);
+  }
+
+  const jsonString = new TextDecoder().decode(inflated);
+
+  let obj;
+  try {
+    obj = JSON.parse(jsonString);
+  } catch (e) {
+    throw new Error("JSON décompressé invalide : " + e.message);
+  }
+
+  return fromCompact(obj);
+}
