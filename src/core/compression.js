@@ -2,6 +2,22 @@
 // compression.js — Compression DEFLATE + Base64 (format compact)
 // Format unique : "1:<base64>"
 // ======================================================
+export function compactFiche(fiche) {
+  return {
+    v: fiche.v || "1.0",
+    c: fiche.category,
+    m: {
+      t: fiche.meta?.title,
+      a: fiche.meta?.author,
+      c: fiche.meta?.created
+    },
+    p: {
+      b: fiche.prompt?.base,
+      v: fiche.prompt?.variables
+    },
+    ai: fiche.ai
+  };
+}
 
 // Vérification présence pako
 function ensurePako() {
