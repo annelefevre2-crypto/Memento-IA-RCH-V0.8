@@ -74,3 +74,7 @@ export function encodeFiche(json) {
 export function decodeFiche(wrapper) {
   return unwrapCompressedData(wrapper);
 }
+
+window.encodeFiche = encodeFiche;
+window.decodeFiche = decodeFiche;
+
