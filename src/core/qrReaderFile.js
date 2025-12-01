@@ -29,4 +29,6 @@ export async function readQrFromFile(file) {
   const fiche = decodeFiche(parsed);
 
   return fiche;
+  console.log("Fichier reçu :", file);
+
 }
