@@ -17,3 +17,42 @@ export function encodeFiche(fiche) {
   ensurePako();
 
   const jsonStr = JSON.stringify(fiche);
+
+  // DEFLATE
+  const deflated = pako.deflate(jsonStr, { level: 9 });
+
+  // Uint8Array -> string binaire -> Base64
+  const base64 = btoa(
+    String.fromCharCode.apply(null, deflated)
+  );
+
+  // Format compact version 1
+  return "1:" + base64;
+}
+
+// ------------------------------------------------------
+// 2. Décompression : "1:<base64>" -> fiche JSON
+// ------------------------------------------------------
+export function decodeFiche(payload) {
+  ensurePako();
+
+  if (typeof payload !== "string") {
+    throw new Error("Payload de type invalide (string attendu).");
+  }
+
+  if (!payload.startsWith("1:")) {
+    throw new Error("Format de payload inconnu (préfixe '1:' attendu).");
+  }
+
+  const base64 = payload.slice(2);
+
+  // Base64 -> string binaire -> tableau d'octets
+  const binary = atob(base64)
+    .split("")
+    .map(c => c.charCodeAt(0));
+
+  // Inflate vers string JSON
+  const inflated = pako.inflate(new Uint8Array(binary), { to: "string" });
+
+  return JSON.parse(inflated);
+}
