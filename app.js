@@ -1,6 +1,13 @@
 import { validateFiche } from "./src/core/jsonSchema.js";
 import { buildVariablesUI, getValues, generatePrompt } from "./src/core/variables.js";
 import { encodeFiche, decodeFiche } from "./src/core/compression.js";
+import { generateQrForFiche } from "./src/core/qrWriter.js";
+
+document.getElementById("btnMakeQR").addEventListener("click", () => {
+  const fiche = window.currentFiche;
+  generateQrForFiche(fiche, "qrContainer");
+});
+
 
 
 
