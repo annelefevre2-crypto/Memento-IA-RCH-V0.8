@@ -44,6 +44,10 @@
     <div id="qrContainer" style="margin-top:20px;"></div>
     <section>
   </main>
+<script type="module">
+  import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
+  window.QrScanner = QrScanner; // expose global pour le module
+</script>
 
   <script type="module" src="./app.js"></script>
 </body>
