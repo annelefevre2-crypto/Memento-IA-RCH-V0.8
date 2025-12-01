@@ -1,34 +1,43 @@
+// ======================================================
+// qrReaderFile.js — Lecture d'un QR Code depuis un fichier
+// ------------------------------------------------------
+// - Utilise QrScanner (global) pour lire l'image
+// - Passe le texte décodé à decodeFiche
+// - Renvoie la fiche JSON
+// ======================================================
+
 import { decodeFiche } from "./compression.js";
 
 export async function readQrFromFile(file) {
-  if (!(file instanceof File)) {
-    throw new Error("Le fichier fourni n'est pas un objet File.");
+  if (!file) {
+    throw new Error("Aucun fichier fourni.");
   }
 
   if (!window.QrScanner) {
-    throw new Error("QrScanner n'est pas disponible.");
+    throw new Error(
+      "QrScanner n'est pas chargé. Vérifie l'import dans index.html."
+    );
   }
 
-  // Lecture brute du QR
-  const result = await window.QrScanner.scanImage(file, {
-    returnDetailedScanResult: true
-  });
+  const imgUrl = URL.createObjectURL(file);
 
-  if (!result?.data) {
-    throw new Error("Aucun QR détecté dans l'image.");
-  }
-
-  const raw = (result.data || "").trim();
-  console.log("RAW DATA DU QR :", raw);
-
-  // 🔥 IMPORTANT : On NE PARSE PAS.
-  // Le texte commence par "1:" ou "1m:", cela doit aller DIRECTEMENT dans decodeFiche()
   try {
-    const fiche = decodeFiche(raw);
-    console.log("Fiche décodée :", fiche);
+    // QrScanner.scanImage accepte une URL ou un objet Image/Video
+    const text = await window.QrScanner.scanImage(imgUrl, {
+      returnDetailedScanResult: false,
+    });
+
+    if (!text) {
+      throw new Error("Aucune donnée texte trouvée dans le QR.");
+    }
+
+    // Décodage fiche (wrapper JSON ou Base64 nu)
+    const fiche = decodeFiche(text);
+
     return fiche;
   } catch (e) {
-    console.error("Erreur decodeFiche :", e);
-    throw new Error("Le QR contient des données compressées invalides.");
+    throw new Error("Impossible de lire le QR : " + (e.message || e));
+  } finally {
+    URL.revokeObjectURL(imgUrl);
   }
 }
