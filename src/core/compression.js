@@ -1,75 +1,49 @@
 // ======================================================
-// compression.js — Compression DEFLATE + Base64 (format compact)
-// Format unique : "1:<base64>"
+// compression.js — Encodage / décodage des fiches
+// ------------------------------------------------------
+// - Minimisation des clés via toCompact/fromCompact
+// - JSON.stringify compact
+// - Compression pako.deflate (Uint8Array)
+// - Encodage Base64
+// - Wrapper { z: "p1", d: "<base64>" }
 // ======================================================
-export function compactFiche(fiche) {
-  return {
-    v: fiche.v || "1.0",
-    c: fiche.category,
-    m: {
-      t: fiche.meta?.title,
-      a: fiche.meta?.author,
-      c: fiche.meta?.created
-    },
-    p: {
-      b: fiche.prompt?.base,
-      v: fiche.prompt?.variables
-    },
-    ai: fiche.ai
-  };
+
+import { toCompact, fromCompact } from "./jsonSchema.js";
+
+const WRAPPER_VERSION = "p1";
+const MAX_JSON_CHARS = 4000;
+
+// ------------------------------------------------------
+// Helpers Base64 <-> Uint8Array
+// ------------------------------------------------------
+function uint8ToBase64(u8) {
+  let binary = "";
+  const len = u8.length;
+
+  // On découpe pour éviter les dépassements de pile
+  const chunkSize = 0x8000;
+  for (let i = 0; i < len; i += chunkSize) {
+    const chunk = u8.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
 }
 
-// Vérification présence pako
-function ensurePako() {
-  if (typeof pako === "undefined") {
-    throw new Error("Pako (DEFLATE) n'est pas chargé.");
+function base64ToUint8(b64) {
+  const binary = atob(b64);
+  const len = binary.length;
+  const u8 = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    u8[i] = binary.charCodeAt(i);
   }
+  return u8;
 }
 
 // ------------------------------------------------------
-// 1. Compression : fiche JSON -> "1:<base64>"
+// encodeFiche(fiche)
+// -> renvoie un objet { wrapper, wrapperString, stats }
+// wrapperString est ce qu'on injecte dans le QR
 // ------------------------------------------------------
 export function encodeFiche(fiche) {
-  ensurePako();
-const compact = compactFiche(fiche);
-const json = JSON.stringify(compact);
-
-
-  // DEFLATE
-  const deflated = pako.deflate(jsonStr, { level: 9 });
-
-  // Uint8Array -> string binaire -> Base64
-  const base64 = btoa(
-    String.fromCharCode.apply(null, deflated)
-  );
-
-  // Format compact version 1
-  return "1:" + base64;
-}
-
-// ------------------------------------------------------
-// 2. Décompression : "1:<base64>" -> fiche JSON
-// ------------------------------------------------------
-export function decodeFiche(payload) {
-  ensurePako();
-
-  if (typeof payload !== "string") {
-    throw new Error("Payload de type invalide (string attendu).");
-  }
-
-  if (!payload.startsWith("1:")) {
-    throw new Error("Format de payload inconnu (préfixe '1:' attendu).");
-  }
-
-  const base64 = payload.slice(2);
-
-  // Base64 -> string binaire -> tableau d'octets
-  const binary = atob(base64)
-    .split("")
-    .map(c => c.charCodeAt(0));
-
-  // Inflate vers string JSON
-  const inflated = pako.inflate(new Uint8Array(binary), { to: "string" });
-
-  return JSON.parse(inflated);
-}
+  if (!window.pako) {
+    throw ne
