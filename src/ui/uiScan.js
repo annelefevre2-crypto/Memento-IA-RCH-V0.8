@@ -105,4 +105,111 @@ function onFicheDecoded(fiche) {
 // LECTURE VIA FICHIER
 // ========================================================================
 document.getElementById("qrFileInput").addEventListener("change", async ev => {
-    const file = e
+    const file = ev.target.files[0];
+    if (!file) return;
+
+    try {
+        const text = await window.QrScanner.scanImage(file);
+        const fiche = decodeFiche(text);
+        onFicheDecoded(fiche);
+    } catch (err) {
+        alert("Erreur : " + err.message);
+    }
+});
+
+// ========================================================================
+// LECTURE VIA CAMÉRA
+// ========================================================================
+let scanner = null;
+
+const videoContainer = document.getElementById("videoContainer");
+const videoEl = document.getElementById("qrVideo");
+
+document.getElementById("btnStartCam").onclick = async () => {
+    videoContainer.style.display = "block";
+
+    scanner = new window.QrScanner(videoEl, result => {
+        const text = result.data || result;
+        try {
+            const fiche = decodeFiche(text);
+            videoContainer.style.display = "none";
+            scanner.stop();
+            onFicheDecoded(fiche);
+        } catch (e) {
+            console.warn("Décodage impossible : ", e.message);
+        }
+    });
+
+    await scanner.start();
+    document.getElementById("btnStopCam").disabled = false;
+};
+
+document.getElementById("btnStopCam").onclick = () => {
+    if (scanner) scanner.stop();
+    videoContainer.style.display = "none";
+};
+
+// ========================================================================
+// COMPILER LE PROMPT FINAL
+// ========================================================================
+document.getElementById("btnBuildPrompt").onclick = () => {
+
+    const fiche = window.currentFiche;
+    if (!fiche) return;
+
+    let prompt = fiche.prompt.base;
+
+    // insérer variables
+    fiche.prompt.variables.forEach(v => {
+
+        if (v.type === "geoloc") {
+            const lat = document.getElementById(`${v.id}_lat`).value;
+            const lon = document.getElementById(`${v.id}_lon`).value;
+            prompt = prompt.replaceAll(`{{${v.id}}}`, `${lat},${lon}`);
+        } else {
+            const val = document.querySelector(`[data-id="${v.id}"]`).value;
+            prompt = prompt.replaceAll(`{{${v.id}}}`, val);
+        }
+    });
+
+    // Ajouter extra
+    const extra = extraInput.value.trim();
+    if (extra) prompt += `\n\nInformations complémentaires :\n${extra}`;
+
+    promptResult.textContent = prompt;
+
+    buildAIbuttons(fiche, prompt);
+};
+
+// ========================================================================
+// BOUTONS IA DYNAMIQUES
+// ========================================================================
+function buildAIbuttons(fiche, prompt) {
+
+    aiButtons.innerHTML = "";
+
+    const color = lvl => ({
+        3: "background:#1dbf65;color:white;",
+        2: "background:#ff9f1c;color:white;",
+        1: "background:#cccccc;color:#777;"
+    }[lvl]);
+
+    const makeBtn = (name, lvl, url) => {
+        const btn = document.createElement("button");
+        btn.textContent = name;
+        btn.style = color(lvl) + "padding:12px;margin-right:10px;border:none;border-radius:10px;font-weight:600;cursor:pointer;";
+
+        if (lvl === 1) btn.disabled = true;
+
+        btn.onclick = () => {
+            const encoded = encodeURIComponent(prompt);
+            window.open(url + encoded, "_blank");
+        };
+
+        aiButtons.appendChild(btn);
+    };
+
+    makeBtn("ChatGPT", fiche.ai?.chatgpt ?? 3, "https://chat.openai.com/?q=");
+    makeBtn("Perplexity", fiche.ai?.perplexity ?? 3, "https://www.perplexity.ai/search?q=");
+    makeBtn("Mistral", fiche.ai?.mistral ?? 3, "https://console.mistral.ai/chat?q=");
+}
