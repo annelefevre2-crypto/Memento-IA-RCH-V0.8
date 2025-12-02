@@ -10,6 +10,9 @@ import { encodeFiche, decodeFiche } from "./src/core/compression.js";
 import { generateQrForFiche } from "./src/core/qrWriter.js";
 import { readQrFromFile } from "./src/core/qrReaderFile.js";
 
+// → AJOUT : module d’interface caméra
+import { setupCameraUI } from "./src/ui/uiCamera.js";
+
 // Exposition pour tests console
 window.encodeFiche = encodeFiche;
 window.decodeFiche = decodeFiche;
@@ -203,62 +206,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-// =============================================================
-// 6) Lecture QR via caméra
-// =============================================================
-let qrScanner = null;
 
-const btnStartCam = document.getElementById("btnStartCam");
-const btnStopCam = document.getElementById("btnStopCam");
-const qrCamResult = document.getElementById("qrCamResult");
-const videoElem = document.getElementById("qrVideo");
-
-if (btnStartCam && btnStopCam && videoElem) {
-
-  btnStartCam.addEventListener("click", async () => {
-    qrCamResult.textContent = "Activation caméra…";
-
-    try {
-      qrScanner = new window.QrScanner(
-        videoElem,
-        async (text) => {
-          qrCamResult.textContent = "QR détecté !\n\n" + text;
-
-          try {
-            const fiche = decodeFiche(text);
-            qrCamResult.textContent += "\n\nFiche décodée :\n" +
-              JSON.stringify(fiche, null, 2);
-            window.lastDecodedFiche = fiche;
-          } catch (err) {
-            qrCamResult.textContent += "\n\nErreur decodeFiche : " + err.message;
-          }
-
-          // Arrêt auto après lecture
-          await qrScanner.stop();
-          btnStartCam.disabled = false;
-          btnStopCam.disabled = true;
-        },
-        {
-          returnDetailedScanResult: true
-        }
-      );
-
-      await qrScanner.start();
-      btnStartCam.disabled = true;
-      btnStopCam.disabled = false;
-      qrCamResult.textContent = "Caméra activée. Scanne un QR…";
-
-    } catch (e) {
-      qrCamResult.textContent = "Erreur activation caméra : " + e.message;
-    }
-  });
-
-  btnStopCam.addEventListener("click", async () => {
-    if (qrScanner) await qrScanner.stop();
-    btnStartCam.disabled = false;
-    btnStopCam.disabled = true;
-    qrCamResult.textContent = "Caméra arrêtée.";
-  });
-}
+  // ------------------------------------------------------------
+  // 6) Initialisation de l'UI caméra (module OPTION C)
+  // ------------------------------------------------------------
+  console.log("🎥 Initialisation du module caméra…");
+  setupCameraUI();
 
 });
