@@ -1,31 +1,48 @@
-// ===============================================================
-// uiMeta.js — Gestion de la section “Métadonnées de la fiche”
-// ===============================================================
+// ======================================================================
+// uiMeta.js — Gestion des métadonnées de la fiche IA
+// ======================================================================
 
-// Renvoie un objet meta conforme au JSON final
 export function getMetaFromUI() {
-  return {
-    categorie: document.getElementById("meta_categorie").value.trim(),
-    titre: document.getElementById("meta_titre").value.trim(),
-    objectif: document.getElementById("meta_objectif").value.trim(),
-    concepteur: document.getElementById("meta_concepteur").value.trim(),
-    date_maj: document.getElementById("meta_date").value
-  };
+    const categorie = document.getElementById("meta_categorie").value.trim();
+    const titre = document.getElementById("meta_titre").value.trim();
+    const objectif = document.getElementById("meta_objectif").value.trim();
+    const concepteur = document.getElementById("meta_concepteur").value.trim();
+    const date = document.getElementById("meta_date").value.trim();
+
+    if (!categorie) throw new Error("La catégorie est obligatoire.");
+    if (!titre) throw new Error("Le titre est obligatoire.");
+    if (!objectif) throw new Error("L'objectif est obligatoire.");
+    if (!date) throw new Error("La date est obligatoire.");
+
+    return {
+        categorie,
+        titre,
+        objectif,
+        concepteur,
+        date
+    };
 }
 
-// Applique les valeurs par défaut ENSOSP
+// ======================================================================
+// Réinitialisation des métadonnées
+// ======================================================================
 export function resetMetaUI() {
-  document.getElementById("meta_categorie").value = "";
-  document.getElementById("meta_titre").value = "";
-  document.getElementById("meta_objectif").value = "";
-  document.getElementById("meta_concepteur").value = "";
-  
-  const now = new Date().toISOString().split("T")[0];
-  document.getElementById("meta_date").value = now;
-}
+    const fields = [
+        "meta_categorie",
+        "meta_titre",
+        "meta_objectif",
+        "meta_concepteur"
+    ];
 
-// Validation minimale
-export function validateMeta(meta) {
-  if (!meta.titre) throw new Error("Le titre de la fiche est obligatoire.");
-  if (!meta.objectif) throw new Error("L’objectif de la fiche est obligatoire.");
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    });
+
+    // Date du jour automatiquement
+    const dateField = document.getElementById("meta_date");
+    if (dateField) {
+        const today = new Date().toISOString().slice(0, 10);
+        dateField.value = today;
+    }
 }
