@@ -1,52 +1,42 @@
 // ======================================================
-// qrWriter.js — Génération d'un QR Code pour une fiche
-// ------------------------------------------------------
-// - encodeFiche(fiche) -> wrapperString compressé+Base64
-// - Adaptation de la taille du QR à la longueur
-// - Utilise qrcodejs (QRCode global)
+// qrWriter.js — Génération correcte d’un QR sans texte parasite
 // ======================================================
 
 import { encodeFiche } from "./compression.js";
 
-// Approximation de la taille visuelle selon la longueur
-function computeQrSize(len) {
-  if (len < 500) return 256;
-  if (len < 1500) return 320;
-  if (len < 2500) return 384;
-  if (len < 3500) return 448;
-  return 512; // cas très dense, on augmente pour la lisibilité
-}
-
-// ------------------------------------------------------
-// generateQrForFiche(fiche, containerId = "qrContainer")
-// ------------------------------------------------------
-export function generateQrForFiche(fiche, containerId = "qrContainer") {
-  if (typeof QRCode === "undefined") {
-    throw new Error("Librairie qrcodejs (QRCode) non chargée.");
-  }
-
+export function generateQrForFiche(fiche, containerId) {
   const container = document.getElementById(containerId);
-  if (!container) {
-    throw new Error(`Conteneur QR introuvable : #${containerId}`);
-  }
+  if (!container) throw new Error("Container QR introuvable");
 
-  // On nettoie le conteneur
+  // Nettoyer l'ancien QR
   container.innerHTML = "";
 
-  // Encodage de la fiche
+  // Encodage fiche → wrapper JSON compressé
   const { wrapperString, stats } = encodeFiche(fiche);
 
-  const qrSize = computeQrSize(stats.wrapperLength);
+  console.log("[QR] Stats encodage :", stats);
 
-  // Pour debug en console si besoin
-  console.log("[QR] Stats encodage :", stats, "Taille QR (px) :", qrSize);
+  // Taille dynamique
+  let size = 256;
+  if (stats.wrapperLength > 250) size = 320;
+  if (stats.wrapperLength > 400) size = 384;
+  if (stats.wrapperLength > 600) size = 448;
 
-  // Génération du QR
-  // On encode directement wrapperString (texte JSON du wrapper)
-  new QRCode(container, {
+  console.log("[QR] Taille sélectionnée :", size);
+
+  // Génération du QR (canvas only)
+  const qr = new QRCode(container, {
     text: wrapperString,
-    width: qrSize,
-    height: qrSize,
-    correctLevel: QRCode.CorrectLevel.M, // compromis robustesse / densité
+    width: size,
+    height: size,
+    correctLevel: QRCode.CorrectLevel.M  // ECC M recommandé
   });
+
+  // SUPPRIMER LE TEXTE AUTO-GÉNÉRÉ
+  // qrcode.js crée parfois un <div> contenant le texte !
+  // On le supprime explicitement :
+  const possibleText = container.querySelector("div");
+  if (possibleText) {
+    possibleText.remove();
+  }
 }
