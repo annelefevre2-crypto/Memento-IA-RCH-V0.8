@@ -4,212 +4,262 @@
 
 import { decodeFiche } from "../core/compression.js";
 
-// ---------- Sélecteurs ----------
-const sectionScan = document.querySelector(".card:nth-of-type(1)");
-const sectionMeta = document.querySelector(".card:nth-of-type(2)");
-const sectionVars = document.querySelector(".card:nth-of-type(3)");
-const sectionExtra = document.querySelector(".card:nth-of-type(4)");
-const sectionPrompt = document.querySelector(".card:nth-of-type(5)");
+// ---------- Sections ----------
+const sectionScan   = document.getElementById("sectionScan");
+const sectionMeta   = document.getElementById("sectionMeta");
+const sectionVars   = document.getElementById("sectionVars");
+const sectionExtra  = document.getElementById("sectionExtra");
+const sectionPrompt = document.getElementById("sectionPrompt");
 
-const metaHeader = document.getElementById("metaHeader");
+// ---------- Éléments principaux ----------
+const metaHeader    = document.getElementById("metaHeader");
 const scanVariables = document.getElementById("scanVariables");
-const extraInput = document.getElementById("extra_input");
-const promptResult = document.getElementById("promptResult");
-const aiButtons = document.getElementById("aiButtons");
+const extraInput    = document.getElementById("extra_input");
+const promptResult  = document.getElementById("promptResult");
+const aiButtons     = document.getElementById("aiButtons");
 
-// Masquer d’abord toutes les sections d’exploitation
-sectionMeta.style.display =
-sectionVars.style.display =
-sectionExtra.style.display =
-sectionPrompt.style.display = "none";
+// Caméra / fichier
+const btnStartCam   = document.getElementById("btnStartCam");
+const btnStopCam    = document.getElementById("btnStopCam");
+const videoContainer= document.getElementById("videoContainer");
+const videoEl       = document.getElementById("qrVideo");
+const fileInput     = document.getElementById("qrFileInput");
 
-// ========================================================================
-// FONCTION CENTRALE – Quand un QR est décodé
-// ========================================================================
+// Stockage de la fiche courante
+window.currentFiche = null;
+
+// ------------------------------------------------------------------------
+// Quand une fiche est décodée (depuis fichier ou caméra)
+// ------------------------------------------------------------------------
 function onFicheDecoded(fiche) {
+  window.currentFiche = fiche;
 
-    // -------- Masquer la zone scan --------
-    sectionScan.style.display = "none";
+  // 1) Masquer la zone scan, afficher les autres
+  if (sectionScan)   sectionScan.style.display   = "none";
+  if (sectionMeta)   sectionMeta.style.display   = "block";
+  if (sectionVars)   sectionVars.style.display   = "block";
+  if (sectionExtra)  sectionExtra.style.display  = "block";
+  if (sectionPrompt) sectionPrompt.style.display = "block";
 
-    // -------- Afficher les sections 2 à 5 --------
-    sectionMeta.style.display =
-    sectionVars.style.display =
-    sectionExtra.style.display =
-    sectionPrompt.style.display = "block";
+  // 2) Remplir les métadonnées
+  metaHeader.innerHTML = `
+    <h3>${fiche.meta?.titre || "Titre inconnu"}</h3>
+    <p><b>Catégorie :</b> ${fiche.meta?.categorie || "-"}</p>
+    <p><b>Objectif :</b> ${fiche.meta?.objectif || "-"}</p>
+    <p><b>Mis à jour le :</b> ${fiche.meta?.date || "-"}</p>
+    <p><b>Concepteur :</b> ${fiche.meta?.concepteur || "-"}</p>
+  `;
 
-    // -------- Remplir les métadonnées --------
-    metaHeader.innerHTML = `
-      <h3>${fiche.meta?.titre || "Titre inconnu"}</h3>
-      <p><b>Catégorie :</b> ${fiche.meta?.categorie || "-"}</p>
-      <p><b>Objectif :</b> ${fiche.meta?.objectif || "-"}</p>
-      <p><b>Mis à jour le :</b> ${fiche.meta?.date || "-"}</p>
-      <p><b>Concepteur :</b> ${fiche.meta?.concepteur || "-"}</p>
-    `;
+  // 3) Générer les champs de variables
+  scanVariables.innerHTML = "";
+  (fiche.prompt?.variables || []).forEach(v => {
+    const block = document.createElement("div");
+    block.className = "var-field";
 
-    // -------- Construire les champs variables --------
-    scanVariables.innerHTML = "";
-    fiche.prompt.variables.forEach(v => {
+    const lab = document.createElement("label");
+    lab.textContent = v.label || v.id;
+    block.appendChild(lab);
 
-        const block = document.createElement("div");
-        block.className = "var-field";
+    let field;
 
-        const label = document.createElement("label");
-        label.textContent = v.label;
-        block.appendChild(label);
+    if (v.type === "text") {
+      field = document.createElement("input");
+      field.type = "text";
+    } else if (v.type === "number") {
+      field = document.createElement("input");
+      field.type = "number";
+    } else if (v.type === "choice") {
+      field = document.createElement("select");
+      (v.options || []).forEach(opt => {
+        const o = document.createElement("option");
+        o.value = opt;
+        o.textContent = opt;
+        field.appendChild(o);
+      });
+    } else if (v.type === "geoloc") {
+      field = document.createElement("div");
+      field.innerHTML = `
+        <button class="btn-reset" id="${v.id}_gps">📍 Acquérir position</button>
+        <input id="${v.id}_lat" placeholder="Latitude">
+        <input id="${v.id}_lon" placeholder="Longitude">
+      `;
+      // branchement GPS après insertion dans le DOM
+      setTimeout(() => {
+        const btn = document.getElementById(`${v.id}_gps`);
+        if (!btn) return;
+        btn.onclick = () => {
+          navigator.geolocation.getCurrentPosition(pos => {
+            const lat = document.getElementById(`${v.id}_lat`);
+            const lon = document.getElementById(`${v.id}_lon`);
+            if (lat) lat.value = pos.coords.latitude.toFixed(6);
+            if (lon) lon.value = pos.coords.longitude.toFixed(6);
+          });
+        };
+      }, 0);
+    } else {
+      field = document.createElement("input");
+      field.type = "text";
+    }
 
-        let field;
+    field.dataset.id = v.id;
+    block.appendChild(field);
+    scanVariables.appendChild(block);
+  });
 
-        if (v.type === "text") {
-            field = document.createElement("input");
-            field.type = "text";
-        }
-        else if (v.type === "number") {
-            field = document.createElement("input");
-            field.type = "number";
-        }
-        else if (v.type === "choice") {
-            field = document.createElement("select");
-            v.options.forEach(opt => {
-                const o = document.createElement("option");
-                o.value = opt;
-                o.textContent = opt;
-                field.appendChild(o);
-            });
-        }
-        else if (v.type === "geoloc") {
-            field = document.createElement("div");
-            field.innerHTML = `
-                <button class="btn-reset" id="${v.id}_gps">📍 Acquérir position</button>
-                <input id="${v.id}_lat" placeholder="Latitude">
-                <input id="${v.id}_lon" placeholder="Longitude">
-            `;
-            setTimeout(() => {
-                document.getElementById(`${v.id}_gps`).onclick = () => {
-                    navigator.geolocation.getCurrentPosition(pos => {
-                        document.getElementById(`${v.id}_lat`).value = pos.coords.latitude.toFixed(6);
-                        document.getElementById(`${v.id}_lon`).value = pos.coords.longitude.toFixed(6);
-                    });
-                };
-            }, 50);
-        }
-
-        field.dataset.id = v.id;
-        block.appendChild(field);
-        scanVariables.appendChild(block);
-    });
-
-    window.currentFiche = fiche;
+  // Nettoyage de l'affichage prompt / boutons
+  promptResult.textContent = "";
+  aiButtons.innerHTML = "";
 }
 
-// ========================================================================
-// LECTURE VIA FICHIER
-// ========================================================================
-document.getElementById("qrFileInput").addEventListener("change", async ev => {
+// ------------------------------------------------------------------------
+// Lecture via FICHIER
+// ------------------------------------------------------------------------
+if (fileInput) {
+  fileInput.addEventListener("change", async (ev) => {
     const file = ev.target.files[0];
     if (!file) return;
 
     try {
-        const text = await window.QrScanner.scanImage(file);
-        const fiche = decodeFiche(text);
-        onFicheDecoded(fiche);
+      const text = await window.QrScanner.scanImage(file);
+      const fiche = decodeFiche(text);
+      onFicheDecoded(fiche);
     } catch (err) {
-        alert("Erreur : " + err.message);
+      alert("Erreur lecture fichier : " + err.message);
     }
-});
+  });
+}
 
-// ========================================================================
-// LECTURE VIA CAMÉRA
-// ========================================================================
+// ------------------------------------------------------------------------
+// Lecture via CAMÉRA
+// ------------------------------------------------------------------------
 let scanner = null;
 
-const videoContainer = document.getElementById("videoContainer");
-const videoEl = document.getElementById("qrVideo");
-
-document.getElementById("btnStartCam").onclick = async () => {
+if (btnStartCam && btnStopCam && videoEl) {
+  btnStartCam.onclick = async () => {
     videoContainer.style.display = "block";
+    btnStartCam.disabled = true;
+    btnStopCam.disabled = false;
 
     scanner = new window.QrScanner(videoEl, result => {
-        const text = result.data || result;
-        try {
-            const fiche = decodeFiche(text);
-            videoContainer.style.display = "none";
-            scanner.stop();
-            onFicheDecoded(fiche);
-        } catch (e) {
-            console.warn("Décodage impossible : ", e.message);
-        }
+      const text = result.data || result;
+      try {
+        const fiche = decodeFiche(text);
+        // On stoppe dès qu’un QR valide est lu
+        scanner.stop();
+        videoContainer.style.display = "none";
+        onFicheDecoded(fiche);
+      } catch (e) {
+        console.warn("QR non compatible :", e.message);
+      }
     });
 
     await scanner.start();
-    document.getElementById("btnStopCam").disabled = false;
-};
+  };
 
-document.getElementById("btnStopCam").onclick = () => {
-    if (scanner) scanner.stop();
+  btnStopCam.onclick = async () => {
+    if (scanner) await scanner.stop();
     videoContainer.style.display = "none";
-};
+    btnStartCam.disabled = false;
+    btnStopCam.disabled = true;
+  };
+}
 
-// ========================================================================
-// COMPILER LE PROMPT FINAL
-// ========================================================================
-document.getElementById("btnBuildPrompt").onclick = () => {
+// ------------------------------------------------------------------------
+// Compiler le PROMPT final
+// ------------------------------------------------------------------------
+const btnBuildPrompt = document.getElementById("btnBuildPrompt");
+const btnCopyPrompt  = document.getElementById("btnCopy");
 
+if (btnBuildPrompt) {
+  btnBuildPrompt.onclick = () => {
     const fiche = window.currentFiche;
-    if (!fiche) return;
+    if (!fiche) {
+      alert("Aucune fiche chargée.");
+      return;
+    }
 
-    let prompt = fiche.prompt.base;
+    let prompt = fiche.prompt?.base || "";
 
-    // insérer variables
-    fiche.prompt.variables.forEach(v => {
+    (fiche.prompt?.variables || []).forEach(v => {
+      let replacement = "";
 
-        if (v.type === "geoloc") {
-            const lat = document.getElementById(`${v.id}_lat`).value;
-            const lon = document.getElementById(`${v.id}_lon`).value;
-            prompt = prompt.replaceAll(`{{${v.id}}}`, `${lat},${lon}`);
-        } else {
-            const val = document.querySelector(`[data-id="${v.id}"]`).value;
-            prompt = prompt.replaceAll(`{{${v.id}}}`, val);
-        }
+      if (v.type === "geoloc") {
+        const lat = document.getElementById(`${v.id}_lat`)?.value || "";
+        const lon = document.getElementById(`${v.id}_lon`)?.value || "";
+        replacement = `${lat},${lon}`;
+      } else {
+        const el = document.querySelector(`[data-id="${v.id}"]`);
+        replacement = el?.value || "";
+      }
+
+      prompt = prompt.replaceAll(`{{${v.id}}}`, replacement);
     });
 
-    // Ajouter extra
     const extra = extraInput.value.trim();
-    if (extra) prompt += `\n\nInformations complémentaires :\n${extra}`;
+    if (extra) {
+      prompt += `\n\nInformations complémentaires :\n${extra}`;
+    }
 
     promptResult.textContent = prompt;
+    buildAIButtons(fiche, prompt);
+  };
+}
 
-    buildAIbuttons(fiche, prompt);
-};
+// Copier le prompt
+if (btnCopyPrompt) {
+  btnCopyPrompt.onclick = async () => {
+    const txt = promptResult.textContent.trim();
+    if (!txt) return;
+    try {
+      await navigator.clipboard.writeText(txt);
+      alert("Prompt copié dans le presse-papiers.");
+    } catch {
+      alert("Impossible de copier le prompt.");
+    }
+  };
+}
 
-// ========================================================================
-// BOUTONS IA DYNAMIQUES
-// ========================================================================
-function buildAIbuttons(fiche, prompt) {
+// ------------------------------------------------------------------------
+// Boutons d’envoi vers les IA
+// ------------------------------------------------------------------------
+function buildAIButtons(fiche, prompt) {
+  aiButtons.innerHTML = "";
+  if (!prompt.trim()) return;
 
-    aiButtons.innerHTML = "";
+  const levels = fiche.ai || {
+    chatgpt: 3,
+    perplexity: 3,
+    mistral: 3,
+  };
 
-    const color = lvl => ({
-        3: "background:#1dbf65;color:white;",
-        2: "background:#ff9f1c;color:white;",
-        1: "background:#cccccc;color:#777;"
-    }[lvl]);
+  const styleForLevel = (lvl) => {
+    switch (Number(lvl)) {
+      case 3: return "background:#1dbf65;color:white;";
+      case 2: return "background:#ff9f1c;color:white;";
+      default: return "background:#cccccc;color:#777;";
+    }
+  };
 
-    const makeBtn = (name, lvl, url) => {
-        const btn = document.createElement("button");
-        btn.textContent = name;
-        btn.style = color(lvl) + "padding:12px;margin-right:10px;border:none;border-radius:10px;font-weight:600;cursor:pointer;";
+  const mkBtn = (label, lvl, baseUrl) => {
+    const btn = document.createElement("button");
+    btn.textContent = label;
+    btn.style = styleForLevel(lvl) +
+      "padding:10px 16px;margin-right:10px;border:none;border-radius:10px;font-weight:600;cursor:pointer;";
 
-        if (lvl === 1) btn.disabled = true;
+    if (Number(lvl) === 1) {
+      btn.disabled = true;
+      btn.style.cursor = "not-allowed";
+    } else {
+      btn.onclick = () => {
+        const encoded = encodeURIComponent(prompt);
+        window.open(baseUrl + encoded, "_blank");
+      };
+    }
 
-        btn.onclick = () => {
-            const encoded = encodeURIComponent(prompt);
-            window.open(url + encoded, "_blank");
-        };
+    aiButtons.appendChild(btn);
+  };
 
-        aiButtons.appendChild(btn);
-    };
-
-    makeBtn("ChatGPT", fiche.ai?.chatgpt ?? 3, "https://chat.openai.com/?q=");
-    makeBtn("Perplexity", fiche.ai?.perplexity ?? 3, "https://www.perplexity.ai/search?q=");
-    makeBtn("Mistral", fiche.ai?.mistral ?? 3, "https://console.mistral.ai/chat?q=");
+  mkBtn("ChatGPT",   levels.chatgpt,   "https://chat.openai.com/?q=");
+  mkBtn("Perplexity",levels.perplexity,"https://www.perplexity.ai/search?q=");
+  mkBtn("Mistral",   levels.mistral,   "https://console.mistral.ai/chat?q=");
 }
