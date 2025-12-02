@@ -1,5 +1,5 @@
 // ===============================================================
-// uiVariables.js — Gestion UI des variables
+// uiVariables.js — Gestion UI des variables (PAGE CREATION)
 // ===============================================================
 
 let varCount = 0;
@@ -9,7 +9,7 @@ export function initVariablesUI() {
   document.getElementById("btnAddVariable").addEventListener("click", addVariableUI);
   document.getElementById("variablesContainer").innerHTML = "";
   varCount = 0;
-  addVariableUI(); // ajoute une variable vide par défaut
+  addVariableUI(); // Ajoute une variable vide par défaut
 }
 
 export function addVariableUI() {
@@ -23,7 +23,16 @@ export function addVariableUI() {
   div.className = "variableBlock";
   div.dataset.index = varCount;
 
+  // IMPORTANT : aucun élément de géolocalisation dans l’onglet création !
   div.innerHTML = `
+    <div class="varHeader">
+      <label class="checkbox">
+        <input type="checkbox" id="var_req_${varCount}">
+        Obligatoire
+      </label>
+      <button class="btnSmall" data-del="${varCount}">Supprimer</button>
+    </div>
+
     <input class="input" placeholder="Label (ex : Code ONU)" id="var_label_${varCount}">
     <input class="input" placeholder="Identifiant (ex : code_onu)" id="var_id_${varCount}">
 
@@ -34,29 +43,22 @@ export function addVariableUI() {
       <option value="geoloc">geoloc</option>
     </select>
 
-    <label class="checkbox">
-      <input type="checkbox" id="var_req_${varCount}">
-      Obligatoire
-    </label>
-
-    <button class="btnSmall" data-del="${varCount}">Supprimer</button>
-
-    <!-- Aucun élément GPS n’apparaît ici -->
+    <!-- Aucun champ supplémentaire ici -->
   `;
 
+  // Bouton supprimer
   div.querySelector("button").addEventListener("click", () => {
     div.remove();
-    varCount--;
   });
 
   container.appendChild(div);
 }
 
-// Extraction du JSON final
+
+// Extraction du JSON final pour l’export QR
 export function getVariablesFromUI() {
   const blocks = [...document.querySelectorAll(".variableBlock")];
   const vars = [];
-
   const ids = new Set();
 
   for (const b of blocks) {
@@ -74,7 +76,12 @@ export function getVariablesFromUI() {
     }
     ids.add(id);
 
-    vars.push({ id, label, type, required: req });
+    vars.push({
+      id,
+      label,
+      type,
+      required: req
+    });
   }
 
   return vars;
