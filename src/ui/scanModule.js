@@ -16,7 +16,11 @@ if (qrInput) {
         qrFileResult.textContent = "Lecture en cours…";
 
         try {
-            const text = await window.QrScanner.scanImage(file);
+            const raw = await window.QrScanner.scanImage(file);
+
+            // raw = soit string, soit detailed { data: "...", ... }
+            const text = (typeof raw === "string") ? raw : raw.data;
+
             const fiche = decodeFiche(text);
             qrFileResult.textContent = JSON.stringify(fiche, null, 2);
         } 
@@ -35,28 +39,44 @@ const videoEl = document.getElementById("qrVideo");
 const camResult = document.getElementById("qrCamResult");
 
 if (btnStart && btnStop && videoEl) {
+
     btnStart.addEventListener("click", async () => {
         camResult.textContent = "Activation caméra…";
 
         scanner = new window.QrScanner(
             videoEl,
-            (text) => {
+            async (result) => {
+
+                // -------- Correction MAJEURE : extraction du texte --------
+                const text = (typeof result === "string") ? result : result.data;
                 camResult.textContent = "QR détecté :\n" + text;
+
                 try {
                     const fiche = decodeFiche(text);
-                    camResult.textContent += "\n\nJSON :\n" + JSON.stringify(fiche, null, 2);
-                } catch (e) {
-                    camResult.textContent += "\n\nErreur decodeFiche : " + e.message;
+                    camResult.textContent +=
+                        "\n\nJSON décodé :\n" + JSON.stringify(fiche, null, 2);
+                } 
+                catch (e) {
+                    camResult.textContent +=
+                        "\n\n❌ Erreur decodeFiche : " + e.message;
                 }
+
+                // Optionnel : arrêt auto après scan
+                await scanner.stop();
+                btnStart.disabled = false;
+                btnStop.disabled = true;
             },
-            { returnDetailedScanResult: true }
+            {
+                returnDetailedScanResult: true,
+                inversionMode: "original"
+            }
         );
 
         await scanner.start();
         btnStart.disabled = true;
         btnStop.disabled = false;
 
-        camResult.textContent = "Caméra activée — Scanne le QR.";
+        camResult.textContent = "Caméra activée — Scanne un QR.";
     });
 
     btnStop.addEventListener("click", async () => {
