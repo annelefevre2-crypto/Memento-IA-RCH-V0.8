@@ -11,14 +11,18 @@
 
   <!-- QR Writer -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
 </head>
+
 <body>
   <header>
-    <h1>Mémento IA – RCH : Test du moteur JSON + variablesv16</h1>
+    <h1>Mémento IA – RCH : Test du moteur JSON + variables v16</h1>
   </header>
 
   <main>
+
+    <!-- ========================================= -->
+    <!-- 1. Charger JSON -->
+    <!-- ========================================= -->
     <section>
       <h2>1. Charger une fiche JSON</h2>
       <textarea id="jsonInput" placeholder="Colle ici une fiche JSON lisible…" rows="10"></textarea>
@@ -29,6 +33,9 @@
 
     <hr />
 
+    <!-- ========================================= -->
+    <!-- 2. Variables dynamiques -->
+    <!-- ========================================= -->
     <section>
       <h2>2. Variables de la fiche</h2>
       <div id="formContainer"></div>
@@ -36,6 +43,9 @@
 
     <hr />
 
+    <!-- ========================================= -->
+    <!-- 3. Actions -->
+    <!-- ========================================= -->
     <section>
       <h2>3. Actions</h2>
       <button id="btnValues">Lire les valeurs</button>
@@ -45,37 +55,50 @@
       <pre id="output"></pre>
     </section>
 
+    <!-- ========================================= -->
+    <!-- 4. Génération QR -->
+    <!-- ========================================= -->
     <section>
       <button id="btnMakeQR">Générer le QR Code</button>
       <div id="qrContainer" style="margin-top:20px;"></div>
     </section>
 
+    <!-- ========================================= -->
+    <!-- 5. Lecture QR (fichier image) -->
+    <!-- ========================================= -->
     <section>
       <h2>Lecture d’un QR Code (fichier image)</h2>
       <input type="file" id="qrFileInput" accept="image/*" />
       <pre id="qrFileResult"></pre>
     </section>
-  <h2>Lecture d’un QR Code (caméra)</h2>
 
-  <button id="btnStartCam">Activer la caméra</button>
-  <button id="btnStopCam" disabled>Arrêter</button>
+    <!-- ========================================= -->
+    <!-- 6. Lecture QR par caméra -->
+    <!-- ========================================= -->
+    <section>
+      <h2>Lecture d’un QR Code (caméra)</h2>
 
-  <div id="videoContainer" style="width: 300px; height: 300px; margin-top:10px;">
-    <video id="qrVideo" style="width:100%; height:100%; background:#000;"></video>
-  </div>
+      <button id="btnStartCam">Activer la caméra</button>
+      <button id="btnStopCam" disabled>Arrêter</button>
 
-  <pre id="qrCamResult"></pre>
-</section>
+      <div id="videoContainer" style="width: 300px; height: 300px; margin-top:10px;">
+        <video id="qrVideo" style="width:100%; height:100%; background:#000;"></video>
+      </div>
+
+      <pre id="qrCamResult"></pre>
+    </section>
 
   </main>
 
-  <!-- IMPORT QrScanner APRÈS LE DOM + avant app.js -->
+  <!-- ========================================= -->
+  <!-- QrScanner doit être injecté avant app.js -->
+  <!-- ========================================= -->
   <script type="module">
     import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
-    window.QrScanner = QrScanner;  // rendu global
+    window.QrScanner = QrScanner; // rendu global
   </script>
 
-  <!-- APP.JS (doit s’exécuter après QrScanner) -->
+  <!-- App principale -->
   <script type="module" src="./app.js"></script>
 
 </body>
