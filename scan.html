@@ -25,47 +25,46 @@
   </nav>
 
   <main>
-    <h1 class="page-title">Lecture & Exploitation d’une fiche IA – RCH</h1>
+    <h1 class="page-title">Lecture & exploitation d’une fiche IA – RCH</h1>
 
-    <!-- ======================= SCAN / IMPORT ====================== -->
-    <section class="card">
+    <!-- =============== 1. SCAN / IMPORT ================== -->
+    <section class="card" id="sectionScan">
       <h2>1. Charger ou scanner un QR Code</h2>
 
       <button id="btnStartCam" class="btn-add-var">🎥 Scanner via caméra</button>
       <button id="btnStopCam" class="btn-reset" disabled>Arrêter</button>
 
-      <!-- ⚠️ CORRECT : le container vidéo doit être ici, PAS dans le head -->
+      <!-- Masqué par défaut, affiché au clic -->
       <div id="videoContainer" style="display:none;margin-top:15px;">
         <video id="qrVideo" style="width:100%;background:#000;border-radius:12px;"></video>
       </div>
 
       <h3>Ou importer une image</h3>
       <input type="file" id="qrFileInput" accept="image/*">
-
-      <!-- Ne plus afficher le QR brut -->
+      <!-- on ne montre plus le contenu brut -->
       <pre id="qrRaw" style="display:none;"></pre>
     </section>
 
-    <!-- ======================= META DÉCODÉES ====================== -->
-    <section class="card">
+    <!-- =============== 2. META ================== -->
+    <section class="card" id="sectionMeta" style="display:none;">
       <h2>2. Informations de la fiche</h2>
       <div id="metaHeader" class="meta-box"></div>
     </section>
 
-    <!-- ======================= VARIABLES ====================== -->
-    <section class="card">
+    <!-- =============== 3. VARIABLES ================== -->
+    <section class="card" id="sectionVars" style="display:none;">
       <h2>3. Variables à compléter</h2>
       <div id="scanVariables"></div>
     </section>
 
-    <!-- ======================= INFO COMPLÉMENTAIRE ====================== -->
-    <section class="card">
+    <!-- =============== 4. INFO COMPLÉMENTAIRES ================== -->
+    <section class="card" id="sectionExtra" style="display:none;">
       <h2>4. Informations complémentaires</h2>
       <textarea id="extra_input" rows="5" placeholder="Ajouter des précisions utiles à l’IA…"></textarea>
     </section>
 
-    <!-- ======================= PROMPT FINAL ====================== -->
-    <section class="card">
+    <!-- =============== 5. PROMPT FINAL ================== -->
+    <section class="card" id="sectionPrompt" style="display:none;">
       <h2>5. Générer le prompt final</h2>
 
       <button id="btnBuildPrompt" class="btn-generate">⚡ Compiler le prompt</button>
@@ -80,7 +79,6 @@
 
   </main>
 
-  <!-- MODULE SCAN -->
   <script type="module" src="./src/ui/uiScan.js"></script>
 
 </body>
