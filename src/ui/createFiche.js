@@ -1,135 +1,107 @@
 // ======================================================================
-// createFiche.js — Module principal de l’onglet création de fiche IA RCH
+// createFiche.js — Génération d’une fiche IA RCH + QR (Version corrigée)
 // ======================================================================
 
-// Import des sous-modules UI
-import { initVariablesUI, getVariablesFromUI } from "./uiVariables.js";
-import { getMetaFromUI, resetMetaUI } from "./uiMeta.js";
-import { getPromptFromUI, resetPromptUI } from "./uiPrompt.js";
-import { resetConfidenceIndexes } from "./uiReset.js";
-
-// Import du moteur JSON + QR
 import { encodeFiche } from "../core/compression.js";
-import { generateQrForFiche } from "../core/qrWriter.js";
+import { gatherVariablesFromUI } from "./uiVariables.js";
 
-// ================================================================
-// INITIALISATION DE LA PAGE
-// ================================================================
-document.addEventListener("DOMContentLoaded", () => {
-
-    console.log("🔧 createFiche.js chargé");
-
-    // Pré-remplit la date du jour
-    const dateField = document.getElementById("meta_date");
-    if (dateField) {
-        const today = new Date().toISOString().slice(0, 10);
-        dateField.value = today;
-    }
-
-    // Initialise l’UI Variables
-    initVariablesUI();
-
-    // Bouton principal : Générer JSON + QR
-    document.getElementById("btnGenerate").addEventListener("click", onGenerate);
-
-    // Bouton RESET
-    document.getElementById("btnReset").addEventListener("click", onReset);
-
-});
-
-
-// ================================================================
-// GÉNÉRATION JSON + QR CODE
-// ================================================================
-async function onGenerate() {
-    console.log("🟦 Génération de la fiche demandée…");
-
-    let meta, vars, prompt;
-
-    try {
-        meta = getMetaFromUI();
-        vars = getVariablesFromUI();
-        prompt = getPromptFromUI();
-    }
-    catch (e) {
-        alert("Erreur dans la saisie : " + e.message);
-        console.error(e);
-        return;
-    }
-
-    // Vérification taille du prompt
-    if (prompt.length > 4000) {
-        alert("Le prompt dépasse 4000 caractères !");
-        return;
-    }
-
-    // Construction JSON final
-    const fiche = {
-        meta,
-        prompt: {
-            base: prompt,
-            variables: vars
-        }
-    };
-
-    console.log("📦 Fiche JSON construite :", fiche);
-
-    // Compression + wrapper
-    let encoded;
-    try {
-        encoded = encodeFiche(fiche);
-    }
-    catch (err) {
-        alert("Erreur compression : " + err.message);
-        console.error(err);
-        return;
-    }
-
-    console.log("📚 Fiche compressée :", encoded);
-
-    // Génération QR
-    const qrContainer = document.getElementById("qrContainer");
-    qrContainer.innerHTML = "";
-
-    try {
-        generateQrForFiche(fiche, "qrContainer");
-        console.log("🎉 QR généré !");
-    }
-    catch (err) {
-        alert("Erreur génération QR : " + err.message);
-        console.error(err);
-    }
+// ----------------------------------------------------------------------
+// Lecture des blocs META et PROMPT depuis l’UI
+// ----------------------------------------------------------------------
+function getMetaFromUI() {
+  return {
+    titre: document.getElementById("meta_titre").value.trim(),
+    categorie: document.getElementById("meta_categorie").value.trim(),
+    objectif: document.getElementById("meta_objectif").value.trim(),
+    date: new Date().toISOString().slice(0, 10),
+    concepteur: document.getElementById("meta_concepteur").value.trim()
+  };
 }
 
+function getPromptFromUI() {
+  return document.getElementById("prompt_base").value.trim();
+}
 
-// ================================================================
-// RESET COMPLET
-// ================================================================
-function onReset() {
-    console.log("🔄 Réinitialisation complète demandée");
+// ----------------------------------------------------------------------
+// Génération de la fiche
+// ----------------------------------------------------------------------
+export async function onGenerate() {
+  console.log("🟦 Génération de la fiche demandée…");
 
-    // 1. Métadonnées
-    resetMetaUI();
+  let meta, vars, basePrompt;
 
-    // 2. Variables
-    initVariablesUI();
+  // ---------------------------
+  // Lecture META + VARIABLES + PROMPT
+  // ---------------------------
+  try {
+    meta = getMetaFromUI();
+    vars = gatherVariablesFromUI();
+    basePrompt = getPromptFromUI();
+  }
+  catch (e) {
+    alert("Erreur dans la saisie : " + e.message);
+    console.error(e);
+    return;
+  }
 
-    // 3. Prompt
-    resetPromptUI();
+  // ------------------------------------------------------------------
+  // 🔧 Correction #AI-1
+  // Lecture des indices de confiance IA (ajout du bloc `ai`)
+  // ------------------------------------------------------------------
+  const ai = {
+    chatgpt: Number(document.getElementById("aiChatGPT")?.value ?? 3),
+    perplexity: Number(document.getElementById("aiPerplexity")?.value ?? 3),
+    mistral: Number(document.getElementById("aiMistral")?.value ?? 3)
+  };
 
-    // 4. Indices IA → remise à 3
-    resetConfidenceIndexes();
+  console.log("📌 Indices IA détectés :", ai);
 
-    // 5. Nettoyer QR
-    const qrContainer = document.getElementById("qrContainer");
-    if (qrContainer) qrContainer.innerHTML = "";
+  // ------------------------------------------------------------------
+  // Construction du JSON final de la fiche
+  // ------------------------------------------------------------------
+  const fiche = {
+    meta,
+    prompt: {
+      base: basePrompt,
+      variables: vars
+    },
+    ai          // 🔧 Correction #AI-2 : insertion du bloc IA dans la fiche
+  };
 
-    // 6. Remettre la date du jour
-    const dateField = document.getElementById("meta_date");
-    if (dateField) {
-        const today = new Date().toISOString().slice(0, 10);
-        dateField.value = today;
-    }
+  console.log("🟩 FICHE construite :", fiche);
 
-    console.log("♻️ Réinitialisation terminée");
+  // ------------------------------------------------------------------
+  // Encodage + Compression via encodeFiche()
+  // ------------------------------------------------------------------
+  let encoded;
+
+  try {
+    encoded = encodeFiche(fiche);
+    console.log("🟩 Encodage OK :", encoded);
+  }
+  catch (e) {
+    console.error("❌ Erreur encodeFiche :", e);
+    alert("Erreur lors de l’encodage de la fiche.");
+    return;
+  }
+
+  // ------------------------------------------------------------------
+  // Export JSON + QR dans l’UI
+  // ------------------------------------------------------------------
+  document.getElementById("json_output").textContent =
+    JSON.stringify(fiche, null, 2);
+
+  const qrContainer = document.getElementById("qr_output");
+  qrContainer.innerHTML = "";
+
+  // ------------------------------------------------------------------
+  // Génération QR (texte = encoded)
+  // ------------------------------------------------------------------
+  new QRCode(qrContainer, {
+    text: encoded,
+    width: 300,
+    height: 300,
+  });
+
+  alert("Fiche générée et QR Code créé !");
 }
