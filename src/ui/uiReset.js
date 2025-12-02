@@ -15,3 +15,13 @@ export function resetCreateUI() {
 
   document.getElementById("qrContainer").innerHTML = "";
 }
+// ======================================================================
+// uiReset.js — Gestion des réinitialisations globales
+// ======================================================================
+
+// Tous les selects ayant la classe .indice-confiance seront remis à 3
+export function resetConfidenceIndexes() {
+    document.querySelectorAll(".indice-confiance").forEach(sel => {
+        sel.value = "3";
+    });
+}
