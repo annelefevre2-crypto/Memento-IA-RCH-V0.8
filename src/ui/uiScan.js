@@ -243,8 +243,8 @@ function buildAIButtons(fiche, prompt) {
   const mkBtn = (label, lvl, baseUrl) => {
     const btn = document.createElement("button");
     btn.textContent = label;
-    btn.style = styleForLevel(lvl) +
-      "padding:10px 16px;margin-right:10px;border:none;border-radius:10px;font-weight:600;cursor:pointer;";
+    btn.style = styleForLevel(lvl)
+      + "padding:10px 16px;margin-right:10px;border:none;border-radius:10px;font-weight:600;cursor:pointer;";
 
     if (Number(lvl) === 1) {
       btn.disabled = true;
@@ -261,5 +261,6 @@ function buildAIButtons(fiche, prompt) {
 
   mkBtn("ChatGPT",   levels.chatgpt,   "https://chat.openai.com/?q=");
   mkBtn("Perplexity",levels.perplexity,"https://www.perplexity.ai/search?q=");
-  mkBtn("Mistral",   levels.mistral,   "https://console.mistral.ai/chat?q=");
+  mkBtn("Mistral",   levels.mistral,   "https://chat.mistral.ai/chat?message=");
 }
+
