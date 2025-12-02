@@ -5,7 +5,7 @@
 import { toCompact, fromCompact } from "./jsonSchema.js";
 
 const WRAPPER_VERSION = "p1";
-const MAX_JSON_CHARS = 4000;
+const MAX_JSON_CHARS = 5000;
 
 // ------------------------------------------------------
 // Helpers Base64 <-> Uint8Array
