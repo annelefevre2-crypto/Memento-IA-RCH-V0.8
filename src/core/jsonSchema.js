@@ -69,3 +69,21 @@ export function validateFiche(fiche) {
   // Ici, à personnaliser selon ton schéma.
   return true;
 }
+
+export function fromCompact(cj) {
+    return {
+        meta: {
+            categorie: cj.m?.c || "",
+            titre: cj.m?.t || "",
+            objectif: cj.m?.o || "",
+            concepteur: cj.m?.a || "",
+            date: cj.m?.d || "",
+            version: cj.m?.v || ""
+        },
+
+        ai: cj.a || {},
+
+        prompt: cj.p || {}
+    };
+}
+
