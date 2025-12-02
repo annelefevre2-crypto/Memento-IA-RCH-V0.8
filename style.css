@@ -172,3 +172,11 @@ textarea {
   margin-top: 20px;
   text-align: center;
 }
+/* Champs conditionnels masqués */
+.hidden {
+  display: none;
+}
+
+.choiceOptions {
+  margin-top: 10px;
+}
