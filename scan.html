@@ -1,1 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mémento IA – RCH | Scan QR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Style global ENSOSP -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Librairie QrScanner -->
+  <script type="module">
+    import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
+    window.QrScanner = QrScanner;
+  </script>
+</head>
+
+<body>
+
+  <header class="page-title">Lecture d’une fiche IA – QR Code</header>
+
+  <main>
+
+    <div class="tabs">
+      <a href="index.html" class="tab">🏠 Accueil</a>
+      <a href="create.html" class="tab">📝 Création</a>
+      <a href="#" class="tab active">📷 Scan</a>
+    </div>
+
+    <!-- ====================== LECTURE FICHIER ========================= -->
+    <div class="card">
+      <h2>📄 Lecture depuis un fichier image</h2>
+      <input type="file" id="qrFileInput" accept="image/*" />
+      <pre id="qrFileResult"></pre>
+    </div>
+
+    <!-- ====================== LECTURE CAMERA ========================= -->
+    <div class="card">
+      <h2>📷 Lecture via caméra</h2>
+
+      <button id="btnStartCam" class="btn-create">Activer caméra</button>
+      <button id="btnStopCam" class="btn-scan" disabled>Arrêter</button>
+
+      <div style="width:300px; height:300px; margin:20px auto;">
+        <video id="qrVideo" style="width:100%; height:100%; background:#000;"></video>
+      </div>
+
+      <pre id="qrCamResult"></pre>
+    </div>
+
+  </main>
+
+  <footer>
+    © 2025 — Mémento IA RCH — ENSOSP / SDIS 76
+  </footer>
+
+  <!-- Module JS du scan -->
+  <script type="module" src="./src/ui/scanModule.js"></script>
+
+</body>
+</html>
 
