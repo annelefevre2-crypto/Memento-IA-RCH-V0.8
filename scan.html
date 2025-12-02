@@ -2,15 +2,13 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Mémento IA – RCH | Scan QR</title>
+  <title>Lecture QR – Mémento IA RCH</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Libs QR + Compression -->
   <script src="https://unpkg.com/pako@2.1.0/dist/pako.min.js"></script>
-
-
-  <!-- Style global ENSOSP -->
-  <link rel="stylesheet" href="style.css" />
-
-  <!-- Librairie QrScanner -->
   <script type="module">
     import QrScanner from "https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.min.js";
     window.QrScanner = QrScanner;
@@ -19,46 +17,66 @@
 
 <body>
 
-  <header class="page-title">Lecture d’une fiche IA – QR Code</header>
+  <nav class="tabs">
+    <a href="index.html" class="tab">🏠 Accueil</a>
+    <a class="tab active">📷 Lecture QR</a>
+    <a href="create.html" class="tab">📝 Création</a>
+  </nav>
 
   <main>
+    <h1 class="page-title">Lecture & Exploitation d’une fiche IA – RCH</h1>
 
-    <div class="tabs">
-      <a href="index.html" class="tab">🏠 Accueil</a>
-      <a href="create.html" class="tab">📝 Création</a>
-      <a href="#" class="tab active">📷 Scan</a>
-    </div>
+    <!-- ======================= SCAN / IMPORT ====================== -->
+    <section class="card">
+      <h2>1. Charger ou scanner un QR Code</h2>
 
-    <!-- ====================== LECTURE FICHIER ========================= -->
-    <div class="card">
-      <h2>📄 Lecture depuis un fichier image</h2>
-      <input type="file" id="qrFileInput" accept="image/*" />
-      <pre id="qrFileResult"></pre>
-    </div>
+      <button id="btnStartCam" class="btn-add-var">🎥 Scanner via caméra</button>
+      <button id="btnStopCam" class="btn-reset" disabled>Arrêter</button>
 
-    <!-- ====================== LECTURE CAMERA ========================= -->
-    <div class="card">
-      <h2>📷 Lecture via caméra</h2>
-
-      <button id="btnStartCam" class="btn-create">Activer caméra</button>
-      <button id="btnStopCam" class="btn-scan" disabled>Arrêter</button>
-
-      <div style="width:300px; height:300px; margin:20px auto;">
-        <video id="qrVideo" style="width:100%; height:100%; background:#000;"></video>
+      <div id="videoContainer" style="margin-top:15px;">
+        <video id="qrVideo" style="width:100%;background:#000;border-radius:12px;"></video>
       </div>
 
-      <pre id="qrCamResult"></pre>
-    </div>
+      <h3>Ou importer une image</h3>
+      <input type="file" id="qrFileInput" accept="image/*">
+      <pre id="qrRaw"></pre>
+    </section>
+
+    <!-- ======================= META DÉCODÉES ====================== -->
+    <section class="card">
+      <h2>2. Informations de la fiche</h2>
+      <div id="metaHeader" class="meta-box"></div>
+    </section>
+
+    <!-- ======================= VARIABLES ====================== -->
+    <section class="card">
+      <h2>3. Variables à compléter</h2>
+      <div id="scanVariables"></div>
+    </section>
+
+    <!-- ======================= INFO COMPLÉMENTAIRE ====================== -->
+    <section class="card">
+      <h2>4. Informations complémentaires</h2>
+      <textarea id="extra_input" rows="5" placeholder="Ajouter des précisions utiles à l’IA…"></textarea>
+    </section>
+
+    <!-- ======================= PROMPT FINAL ====================== -->
+    <section class="card">
+      <h2>5. Générer le prompt final</h2>
+
+      <button id="btnBuildPrompt" class="btn-generate">⚡ Compiler le prompt</button>
+
+      <pre id="promptResult"></pre>
+
+      <button id="btnCopy" class="btn-add-var">📋 Copier le prompt</button>
+
+      <h3>Envoyer à une IA</h3>
+      <div id="aiButtons" class="ai-zone"></div>
+    </section>
 
   </main>
 
-  <footer>
-    © 2025 — Mémento IA RCH — ENSOSP / SDIS 76
-  </footer>
-
-  <!-- Module JS du scan -->
-  <script type="module" src="./src/ui/scanModule.js"></script>
+  <script type="module" src="./src/ui/uiScan.js"></script>
 
 </body>
 </html>
-
