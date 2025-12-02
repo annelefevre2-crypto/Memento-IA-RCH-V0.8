@@ -1,12 +1,13 @@
 // ======================================================================
-// createFiche.js — Génération d’une fiche IA RCH + QR (Version corrigée)
+// createFiche.js — Génération d’une fiche IA RCH + QR Code
+// Version corrigée (IA + variables + QR)
 // ======================================================================
 
 import { encodeFiche } from "../core/compression.js";
-import { gatherVariablesFromUI } from "./uiVariables.js";
+import { getVariablesFromUI } from "./uiVariables.js";
 
 // ----------------------------------------------------------------------
-// Lecture des blocs META et PROMPT depuis l’UI
+// Lecture des champs META depuis l’interface utilisateur
 // ----------------------------------------------------------------------
 function getMetaFromUI() {
   return {
@@ -14,89 +15,91 @@ function getMetaFromUI() {
     categorie: document.getElementById("meta_categorie").value.trim(),
     objectif: document.getElementById("meta_objectif").value.trim(),
     date: new Date().toISOString().slice(0, 10),
-    concepteur: document.getElementById("meta_concepteur").value.trim()
+    concepteur: document.getElementById("meta_concepteur").value.trim(),
   };
 }
 
+// ----------------------------------------------------------------------
+// Lecture du prompt principal
+// ----------------------------------------------------------------------
 function getPromptFromUI() {
   return document.getElementById("prompt_base").value.trim();
 }
 
 // ----------------------------------------------------------------------
-// Génération de la fiche
+// Fonction principale déclenchée par "Générer JSON + QR"
 // ----------------------------------------------------------------------
 export async function onGenerate() {
-  console.log("🟦 Génération de la fiche demandée…");
+  console.log("🟦 Démarrage génération fiche…");
 
   let meta, vars, basePrompt;
 
-  // ---------------------------
-  // Lecture META + VARIABLES + PROMPT
-  // ---------------------------
+  // ------------------------------------------------------------------
+  // Lecture META, VARIABLES, PROMPT (avec gestion des erreurs UI)
+  // ------------------------------------------------------------------
   try {
     meta = getMetaFromUI();
-    vars = gatherVariablesFromUI();
+    vars = getVariablesFromUI(); // ✅ Correction : bon nom de fonction
     basePrompt = getPromptFromUI();
-  }
-  catch (e) {
+  } catch (e) {
     alert("Erreur dans la saisie : " + e.message);
     console.error(e);
     return;
   }
 
   // ------------------------------------------------------------------
-  // 🔧 Correction #AI-1
-  // Lecture des indices de confiance IA (ajout du bloc `ai`)
+  // 🔧 Correction IA — Lecture des indices de confiance IA
   // ------------------------------------------------------------------
   const ai = {
     chatgpt: Number(document.getElementById("aiChatGPT")?.value ?? 3),
     perplexity: Number(document.getElementById("aiPerplexity")?.value ?? 3),
-    mistral: Number(document.getElementById("aiMistral")?.value ?? 3)
+    mistral: Number(document.getElementById("aiMistral")?.value ?? 3),
   };
 
-  console.log("📌 Indices IA détectés :", ai);
+  console.log("📌 Indices IA :", ai);
 
   // ------------------------------------------------------------------
-  // Construction du JSON final de la fiche
+  // Construction de l’objet FICHE
   // ------------------------------------------------------------------
   const fiche = {
     meta,
     prompt: {
       base: basePrompt,
-      variables: vars
+      variables: vars,
     },
-    ai          // 🔧 Correction #AI-2 : insertion du bloc IA dans la fiche
+    ai, // ✅ Correction : insertion du bloc IA dans la fiche
   };
 
-  console.log("🟩 FICHE construite :", fiche);
+  console.log("🟩 Fiche construite :", fiche);
 
   // ------------------------------------------------------------------
-  // Encodage + Compression via encodeFiche()
+  // Encodage + compression via encodeFiche()
   // ------------------------------------------------------------------
   let encoded;
-
   try {
     encoded = encodeFiche(fiche);
     console.log("🟩 Encodage OK :", encoded);
-  }
-  catch (e) {
-    console.error("❌ Erreur encodeFiche :", e);
-    alert("Erreur lors de l’encodage de la fiche.");
+  } catch (e) {
+    alert("Erreur durant l’encodage de la fiche !");
+    console.error(e);
     return;
   }
 
   // ------------------------------------------------------------------
-  // Export JSON + QR dans l’UI
+  // Affichage JSON dans l’UI
   // ------------------------------------------------------------------
-  document.getElementById("json_output").textContent =
-    JSON.stringify(fiche, null, 2);
+  document.getElementById("json_output").textContent = JSON.stringify(
+    fiche,
+    null,
+    2
+  );
 
+  // ------------------------------------------------------------------
+  // Génération et affichage du QR
+  // ------------------------------------------------------------------
   const qrContainer = document.getElementById("qr_output");
   qrContainer.innerHTML = "";
 
-  // ------------------------------------------------------------------
-  // Génération QR (texte = encoded)
-  // ------------------------------------------------------------------
   new QRCode(qrContainer, {
     text: encoded,
     width: 300,
