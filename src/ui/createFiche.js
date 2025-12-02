@@ -11,7 +11,13 @@ import { encodeFiche } from "../core/compression.js";
 import { generateQrForFiche } from "../core/qrWriter.js";
 
 document.addEventListener("DOMContentLoaded", () => {
-  
+  // Remplit automatiquement la date du jour dans le champ meta_date
+const dateField = document.getElementById("meta_date");
+if (dateField) {
+    const today = new Date().toISOString().slice(0, 10);
+    dateField.value = today;
+}
+
   // Initialise les UIs spécialisées
   initVariablesUI();
   initPromptUI();
