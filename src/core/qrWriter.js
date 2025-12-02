@@ -1,42 +1,51 @@
 // ======================================================
-// qrWriter.js — Génération correcte d’un QR sans texte parasite
+// qrWriter.js — Générateur de QR Codes pour fiches compressées
+// Version améliorée : QR min 600x600 + adaptation dynamique
 // ======================================================
 
 import { encodeFiche } from "./compression.js";
 
-export function generateQrForFiche(fiche, containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) throw new Error("Container QR introuvable");
+// Taille minimale obligatoire (pour QR longs)
+const MIN_QR_SIZE = 600;
 
-  // Nettoyer l'ancien QR
+// Taille dynamique : plus le wrapper est long, plus on augmente
+function computeQrSize(payloadLength) {
+  // base minimum
+  let size = MIN_QR_SIZE;
+
+  // QR très long : augmenter encore
+  if (payloadLength > 3500) size = 700;
+  if (payloadLength > 4500) size = 800;
+
+  return size;
+}
+
+// ------------------------------------------------------
+// Génération QR
+// ------------------------------------------------------
+export function generateQrForFiche(fiche, containerId) {
+  const enc = encodeFiche(fiche);
+  const wrapperString = enc.wrapperString;
+
+  const container = document.getElementById(containerId);
+  if (!container) throw new Error("Container QR introuvable : " + containerId);
+
+  // Nettoyage précédent
   container.innerHTML = "";
 
-  // Encodage fiche → wrapper JSON compressé
-  const { wrapperString, stats } = encodeFiche(fiche);
+  const qrSize = computeQrSize(wrapperString.length);
+  console.log("📐 Taille QR choisie :", qrSize, "px");
 
-  console.log("[QR] Stats encodage :", stats);
-
-  // Taille dynamique
-  let size = 256;
-  if (stats.wrapperLength > 250) size = 320;
-  if (stats.wrapperLength > 400) size = 384;
-  if (stats.wrapperLength > 600) size = 448;
-
-  console.log("[QR] Taille sélectionnée :", size);
-
-  // Génération du QR (canvas only)
+  // Création du QR Code haute définition
   const qr = new QRCode(container, {
     text: wrapperString,
-    width: size,
-    height: size,
-    correctLevel: QRCode.CorrectLevel.M  // ECC M recommandé
+    width: qrSize,
+    height: qrSize,
+    correctLevel: QRCode.CorrectLevel.M  // M = meilleur équilibre
   });
 
-  // SUPPRIMER LE TEXTE AUTO-GÉNÉRÉ
-  // qrcode.js crée parfois un <div> contenant le texte !
-  // On le supprime explicitement :
-  const possibleText = container.querySelector("div");
-  if (possibleText) {
-    possibleText.remove();
-  }
+  return {
+    encoded: enc,
+    qrSize
+  };
 }
