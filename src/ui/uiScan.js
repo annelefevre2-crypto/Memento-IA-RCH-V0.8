@@ -261,6 +261,8 @@ function buildAIButtons(fiche, prompt) {
 
   mkBtn("ChatGPT",   levels.chatgpt,   "https://chat.openai.com/?q=");
   mkBtn("Perplexity",levels.perplexity,"https://www.perplexity.ai/search?q=");
+  // 🔧 Correction #M1 — nouvelle URL Mistral
   mkBtn("Mistral",   levels.mistral,   "https://chat.mistral.ai/chat?q=");
+  
 
 }
