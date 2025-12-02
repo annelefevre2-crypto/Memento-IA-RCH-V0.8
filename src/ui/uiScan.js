@@ -1,267 +1,269 @@
-// ========================================================================
-// uiScan.js — Lecture + exploitation de fiche IA RCH
-// ========================================================================
+// ======================================================================
+// uiScan.js — Lecture, décodage, exploitation d’une fiche IA – RCH
+// ======================================================================
 
 import { decodeFiche } from "../core/compression.js";
 
-// ---------- Sections ----------
-const sectionScan   = document.getElementById("sectionScan");
-const sectionMeta   = document.getElementById("sectionMeta");
-const sectionVars   = document.getElementById("sectionVars");
-const sectionExtra  = document.getElementById("sectionExtra");
-const sectionPrompt = document.getElementById("sectionPrompt");
+// Elements UI
+const qrFileInput = document.getElementById("qrFileInput");
+const qrRaw = document.getElementById("qrRaw");
 
-// ---------- Éléments principaux ----------
-const metaHeader    = document.getElementById("metaHeader");
+const videoContainer = document.getElementById("videoContainer");
+const videoEl = document.getElementById("qrVideo");
+const btnStart = document.getElementById("btnStartCam");
+const btnStop = document.getElementById("btnStopCam");
+
+const metaHeader = document.getElementById("metaHeader");
 const scanVariables = document.getElementById("scanVariables");
-const extraInput    = document.getElementById("extra_input");
-const promptResult  = document.getElementById("promptResult");
-const aiButtons     = document.getElementById("aiButtons");
+const extraInput = document.getElementById("extra_input");
 
-// Caméra / fichier
-const btnStartCam   = document.getElementById("btnStartCam");
-const btnStopCam    = document.getElementById("btnStopCam");
-const videoContainer= document.getElementById("videoContainer");
-const videoEl       = document.getElementById("qrVideo");
-const fileInput     = document.getElementById("qrFileInput");
+const promptResult = document.getElementById("promptResult");
+const btnBuild = document.getElementById("btnBuildPrompt");
+const btnCopy = document.getElementById("btnCopy");
+const aiButtons = document.getElementById("aiButtons");
 
-// Stockage de la fiche courante
-window.currentFiche = null;
-
-// ------------------------------------------------------------------------
-// Quand une fiche est décodée (depuis fichier ou caméra)
-// ------------------------------------------------------------------------
-function onFicheDecoded(fiche) {
-  window.currentFiche = fiche;
-
-  // 1) Masquer la zone scan, afficher les autres
-  if (sectionScan)   sectionScan.style.display   = "none";
-  if (sectionMeta)   sectionMeta.style.display   = "block";
-  if (sectionVars)   sectionVars.style.display   = "block";
-  if (sectionExtra)  sectionExtra.style.display  = "block";
-  if (sectionPrompt) sectionPrompt.style.display = "block";
-
-  // 2) Remplir les métadonnées
-  metaHeader.innerHTML = `
-    <h3>${fiche.meta?.titre || "Titre inconnu"}</h3>
-    <p><b>Catégorie :</b> ${fiche.meta?.categorie || "-"}</p>
-    <p><b>Objectif :</b> ${fiche.meta?.objectif || "-"}</p>
-    <p><b>Mis à jour le :</b> ${fiche.meta?.date || "-"}</p>
-    <p><b>Concepteur :</b> ${fiche.meta?.concepteur || "-"}</p>
-  `;
-
-  // 3) Générer les champs de variables
-  scanVariables.innerHTML = "";
-  (fiche.prompt?.variables || []).forEach(v => {
-    const block = document.createElement("div");
-    block.className = "var-field";
-
-    const lab = document.createElement("label");
-    lab.textContent = v.label || v.id;
-    block.appendChild(lab);
-
-    let field;
-
-    if (v.type === "text") {
-      field = document.createElement("input");
-      field.type = "text";
-    } else if (v.type === "number") {
-      field = document.createElement("input");
-      field.type = "number";
-    } else if (v.type === "choice") {
-      field = document.createElement("select");
-      (v.options || []).forEach(opt => {
-        const o = document.createElement("option");
-        o.value = opt;
-        o.textContent = opt;
-        field.appendChild(o);
-      });
-    } else if (v.type === "geoloc") {
-      field = document.createElement("div");
-      field.innerHTML = `
-        <button class="btn-reset" id="${v.id}_gps">📍 Acquérir position</button>
-        <input id="${v.id}_lat" placeholder="Latitude">
-        <input id="${v.id}_lon" placeholder="Longitude">
-      `;
-      // branchement GPS après insertion dans le DOM
-      setTimeout(() => {
-        const btn = document.getElementById(`${v.id}_gps`);
-        if (!btn) return;
-        btn.onclick = () => {
-          navigator.geolocation.getCurrentPosition(pos => {
-            const lat = document.getElementById(`${v.id}_lat`);
-            const lon = document.getElementById(`${v.id}_lon`);
-            if (lat) lat.value = pos.coords.latitude.toFixed(6);
-            if (lon) lon.value = pos.coords.longitude.toFixed(6);
-          });
-        };
-      }, 0);
-    } else {
-      field = document.createElement("input");
-      field.type = "text";
-    }
-
-    field.dataset.id = v.id;
-    block.appendChild(field);
-    scanVariables.appendChild(block);
-  });
-
-  // Nettoyage de l'affichage prompt / boutons
-  promptResult.textContent = "";
-  aiButtons.innerHTML = "";
-}
-
-// ------------------------------------------------------------------------
-// Lecture via FICHIER
-// ------------------------------------------------------------------------
-if (fileInput) {
-  fileInput.addEventListener("change", async (ev) => {
-    const file = ev.target.files[0];
-    if (!file) return;
-
-    try {
-      const text = await window.QrScanner.scanImage(file);
-      const fiche = decodeFiche(text);
-      onFicheDecoded(fiche);
-    } catch (err) {
-      alert("Erreur lecture fichier : " + err.message);
-    }
-  });
-}
-
-// ------------------------------------------------------------------------
-// Lecture via CAMÉRA
-// ------------------------------------------------------------------------
 let scanner = null;
+let currentFiche = null;
 
-if (btnStartCam && btnStopCam && videoEl) {
-  btnStartCam.onclick = async () => {
-    videoContainer.style.display = "block";
-    btnStartCam.disabled = true;
-    btnStopCam.disabled = false;
+// ======================================================================
+// UTILITAIRES
+// ======================================================================
 
-    scanner = new window.QrScanner(videoEl, result => {
-      const text = result.data || result;
-      try {
-        const fiche = decodeFiche(text);
-        // On stoppe dès qu’un QR valide est lu
-        scanner.stop();
-        videoContainer.style.display = "none";
-        onFicheDecoded(fiche);
-      } catch (e) {
-        console.warn("QR non compatible :", e.message);
-      }
-    });
-
-    await scanner.start();
-  };
-
-  btnStopCam.onclick = async () => {
-    if (scanner) await scanner.stop();
-    videoContainer.style.display = "none";
-    btnStartCam.disabled = false;
-    btnStopCam.disabled = true;
-  };
+function hideScanSection() {
+    const section1 = document.querySelector(".card");
+    if (section1) section1.style.display = "none";
 }
 
-// ------------------------------------------------------------------------
-// Compiler le PROMPT final
-// ------------------------------------------------------------------------
-const btnBuildPrompt = document.getElementById("btnBuildPrompt");
-const btnCopyPrompt  = document.getElementById("btnCopy");
+function showAllSectionsExceptScan() {
+    document.querySelectorAll(".card").forEach((sec, i) => {
+        if (i > 0) sec.style.display = "block";
+    });
+}
 
-if (btnBuildPrompt) {
-  btnBuildPrompt.onclick = () => {
-    const fiche = window.currentFiche;
-    if (!fiche) {
-      alert("Aucune fiche chargée.");
-      return;
-    }
+function buildMetaHeader(meta) {
+    metaHeader.innerHTML = `
+        <div class="meta-item"><b>Catégorie :</b> ${meta.categorie || "-"}</div>
+        <div class="meta-item"><b>Titre :</b> ${meta.titre || "-"}</div>
+        <div class="meta-item"><b>Objectif :</b> ${meta.objectif || "-"}</div>
+        <div class="meta-item"><b>Concepteur :</b> ${meta.concepteur || "-"}</div>
+        <div class="meta-item"><b>Date :</b> ${meta.date || "-"}</div>
+        <div class="meta-item"><b>Version :</b> ${meta.version || "1.0"}</div>
+    `;
+}
 
-    let prompt = fiche.prompt?.base || "";
+function buildVariablesUI(vars) {
+    scanVariables.innerHTML = "";
 
-    (fiche.prompt?.variables || []).forEach(v => {
-      let replacement = "";
+    vars.forEach(v => {
+        const block = document.createElement("div");
+        block.className = "var-block";
 
-      if (v.type === "geoloc") {
-        const lat = document.getElementById(`${v.id}_lat`)?.value || "";
-        const lon = document.getElementById(`${v.id}_lon`)?.value || "";
-        replacement = `${lat},${lon}`;
-      } else {
-        const el = document.querySelector(`[data-id="${v.id}"]`);
-        replacement = el?.value || "";
-      }
+        let html = `<label>${v.label}</label>`;
 
-      prompt = prompt.replaceAll(`{{${v.id}}}`, replacement);
+        if (v.type === "text") {
+            html += `<input data-var="${v.id}" type="text">`;
+        }
+        else if (v.type === "number") {
+            html += `<input data-var="${v.id}" type="number">`;
+        }
+        else if (v.type === "choice" && v.options) {
+            html += `<select data-var="${v.id}">`;
+            v.options.forEach(opt => {
+                html += `<option value="${opt}">${opt}</option>`;
+            });
+            html += `</select>`;
+        }
+        else if (v.type === "geoloc") {
+            html += `
+                <button class="btn-add-var" data-geo="${v.id}">📍 Acquérir position</button>
+                <input data-var="${v.id}_lat" placeholder="Latitude">
+                <input data-var="${v.id}_lon" placeholder="Longitude">
+            `;
+        }
+
+        block.innerHTML = html;
+        scanVariables.appendChild(block);
     });
 
-    const extra = extraInput.value.trim();
-    if (extra) {
-      prompt += `\n\nInformations complémentaires :\n${extra}`;
+    // Gestion acquisition geoloc
+    document.querySelectorAll("[data-geo]").forEach(btn => {
+        btn.onclick = () => {
+            const id = btn.dataset.geo;
+            navigator.geolocation.getCurrentPosition(pos => {
+                document.querySelector(`[data-var="${id}_lat"]`).value =
+                    pos.coords.latitude.toFixed(6);
+                document.querySelector(`[data-var="${id}_lon"]`).value =
+                    pos.coords.longitude.toFixed(6);
+            });
+        };
+    });
+}
+
+function collectVariableValues(vars) {
+    const out = {};
+
+    vars.forEach(v => {
+        if (v.type === "geoloc") {
+            out[v.id] = {
+                lat: document.querySelector(`[data-var="${v.id}_lat"]`)?.value || "",
+                lon: document.querySelector(`[data-var="${v.id}_lon"]`)?.value || ""
+            };
+        } else {
+            out[v.id] = document.querySelector(`[data-var="${v.id}"]`)?.value || "";
+        }
+    });
+
+    return out;
+}
+
+function buildAIButtons(meta, prompt) {
+    aiButtons.innerHTML = "";
+
+    const encoded = encodeURIComponent(prompt);
+
+    const MODELS = [
+        {
+            key: "chatgpt",
+            label: "ChatGPT",
+            color: meta.chatgpt == 3 ? "green" : meta.chatgpt == 2 ? "orange" : "gray",
+            url: `https://chat.openai.com/?q=${encoded}`
+        },
+        {
+            key: "perplexity",
+            label: "Perplexity",
+            color: meta.perplexity == 3 ? "green" : meta.perplexity == 2 ? "orange" : "gray",
+            url: `https://www.perplexity.ai/search?q=${encoded}`
+        },
+        {
+            key: "mistral",
+            label: "Mistral AI",
+            color: meta.mistral == 3 ? "green" : meta.mistral == 2 ? "orange" : "gray",
+
+            // ✅ Correction URL
+            url: `https://chat.mistral.ai/chat?q=${encoded}`
+        }
+    ];
+
+    MODELS.forEach(m => {
+        const btn = document.createElement("button");
+        btn.className = "btn-ia";
+        btn.style.background =
+            m.color === "green" ? "#2ecc71" :
+            m.color === "orange" ? "#f1c40f" :
+            "#bdc3c7";
+
+        btn.textContent = m.label;
+
+        if (m.color !== "gray") {
+            btn.onclick = () => window.open(m.url, "_blank");
+        } else {
+            btn.disabled = true;
+        }
+
+        aiButtons.appendChild(btn);
+    });
+}
+
+// ======================================================================
+// LECTURE QR VIA FICHIER
+// ======================================================================
+
+if (qrFileInput) {
+    qrFileInput.addEventListener("change", async ev => {
+        const file = ev.target.files[0];
+        if (!file) return;
+
+        try {
+            const text = await window.QrScanner.scanImage(file);
+            qrRaw.textContent = text;
+
+            currentFiche = decodeFiche(text);
+
+            hideScanSection();
+            showAllSectionsExceptScan();
+
+            buildMetaHeader(currentFiche.meta);
+            buildVariablesUI(currentFiche.prompt.variables);
+
+        } catch (err) {
+            qrRaw.textContent = "Erreur : " + err.message;
+        }
+    });
+}
+
+// ======================================================================
+// SCAN VIA CAMERA
+// ======================================================================
+
+if (btnStart) {
+    btnStart.onclick = async () => {
+        videoContainer.style.display = "block";
+
+        scanner = new window.QrScanner(videoEl, result => {
+            videoContainer.style.display = "none";
+            scanner.stop();
+
+            currentFiche = decodeFiche(result);
+
+            hideScanSection();
+            showAllSectionsExceptScan();
+
+            buildMetaHeader(currentFiche.meta);
+            buildVariablesUI(currentFiche.prompt.variables);
+        });
+
+        scanner.start();
+        btnStart.disabled = true;
+        btnStop.disabled = false;
+    };
+}
+
+if (btnStop) {
+    btnStop.onclick = async () => {
+        if (scanner) scanner.stop();
+        videoContainer.style.display = "none";
+        btnStart.disabled = false;
+        btnStop.disabled = true;
+    };
+}
+
+// ======================================================================
+// PROMPT FINAL
+// ======================================================================
+
+btnBuild.onclick = () => {
+    if (!currentFiche) return;
+
+    const vars = collectVariableValues(currentFiche.prompt.variables);
+
+    let prompt = currentFiche.prompt.base;
+
+    Object.keys(vars).forEach(k => {
+        const v = vars[k];
+        if (typeof v === "object") {
+            prompt = prompt.replaceAll(`{{${k}}}`, `${v.lat}, ${v.lon}`);
+        } else {
+            prompt = prompt.replaceAll(`{{${k}}}`, v);
+        }
+    });
+
+    // Ajout des informations complémentaires
+    if (extraInput.value.trim() !== "") {
+        prompt += `\n\nInformations complémentaires :\n${extraInput.value.trim()}`;
     }
 
     promptResult.textContent = prompt;
-    buildAIButtons(fiche, prompt);
-  };
-}
 
-// Copier le prompt
-if (btnCopyPrompt) {
-  btnCopyPrompt.onclick = async () => {
-    const txt = promptResult.textContent.trim();
-    if (!txt) return;
-    try {
-      await navigator.clipboard.writeText(txt);
-      alert("Prompt copié dans le presse-papiers.");
-    } catch {
-      alert("Impossible de copier le prompt.");
-    }
-  };
-}
+    // Générer les boutons IA
+    buildAIButtons(currentFiche.meta, prompt);
+};
 
-// ------------------------------------------------------------------------
-// Boutons d’envoi vers les IA
-// ------------------------------------------------------------------------
-function buildAIButtons(fiche, prompt) {
-  aiButtons.innerHTML = "";
-  if (!prompt.trim()) return;
+// ======================================================================
+// COPIE
+// ======================================================================
 
-  const levels = fiche.ai || {
-    chatgpt: 3,
-    perplexity: 3,
-    mistral: 3,
-  };
-
-  const styleForLevel = (lvl) => {
-    switch (Number(lvl)) {
-      case 3: return "background:#1dbf65;color:white;";
-      case 2: return "background:#ff9f1c;color:white;";
-      default: return "background:#cccccc;color:#777;";
-    }
-  };
-
-  const mkBtn = (label, lvl, baseUrl) => {
-    const btn = document.createElement("button");
-    btn.textContent = label;
-    btn.style = styleForLevel(lvl)
-      + "padding:10px 16px;margin-right:10px;border:none;border-radius:10px;font-weight:600;cursor:pointer;";
-
-    if (Number(lvl) === 1) {
-      btn.disabled = true;
-      btn.style.cursor = "not-allowed";
-    } else {
-      btn.onclick = () => {
-        const encoded = encodeURIComponent(prompt);
-        window.open(baseUrl + encoded, "_blank");
-      };
-    }
-
-    aiButtons.appendChild(btn);
-  };
-
-  mkBtn("ChatGPT",   levels.chatgpt,   "https://chat.openai.com/?q=");
-  mkBtn("Perplexity",levels.perplexity,"https://www.perplexity.ai/search?q=");
-  mkBtn("Mistral",   levels.mistral,   "https://chat.mistral.ai/chat?q=");
-
-}
-
+btnCopy.onclick = () => {
+    navigator.clipboard.writeText(promptResult.textContent);
+    btnCopy.textContent = "✔ Copié !";
+    setTimeout(() => (btnCopy.textContent = "📋 Copier le prompt"), 1500);
+};
