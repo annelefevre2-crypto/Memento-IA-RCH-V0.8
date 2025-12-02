@@ -123,41 +123,44 @@ function buildAIButtons(meta, prompt) {
 
     const MODELS = [
         {
-            key: "chatgpt",
             label: "ChatGPT",
-            color: meta.chatgpt == 3 ? "green" : meta.chatgpt == 2 ? "orange" : "gray",
+            level: Number(meta.chatgpt || 1),
             url: `https://chat.openai.com/?q=${encoded}`
         },
         {
-            key: "perplexity",
             label: "Perplexity",
-            color: meta.perplexity == 3 ? "green" : meta.perplexity == 2 ? "orange" : "gray",
+            level: Number(meta.perplexity || 1),
             url: `https://www.perplexity.ai/search?q=${encoded}`
         },
         {
-            key: "mistral",
             label: "Mistral AI",
-            color: meta.mistral == 3 ? "green" : meta.mistral == 2 ? "orange" : "gray",
-
-            // ✅ Correction URL
-            url: `https://chat.mistral.ai/chat?q=${encoded}`
+            level: Number(meta.mistral || 1),
+            url: `https://chat.mistral.ai/chat?q=${encoded}`   // URL corrigée
         }
     ];
 
     MODELS.forEach(m => {
         const btn = document.createElement("button");
         btn.className = "btn-ia";
-        btn.style.background =
-            m.color === "green" ? "#2ecc71" :
-            m.color === "orange" ? "#f1c40f" :
-            "#bdc3c7";
+
+        // -----------------------------
+        // Couleur selon niveau de confiance
+        // -----------------------------
+        if (m.level === 3) btn.style.background = "#2ecc71";   // Vert
+        else if (m.level === 2) btn.style.background = "#f1c40f"; // Orange
+        else btn.style.background = "#bdc3c7";                // Gris
 
         btn.textContent = m.label;
 
-        if (m.color !== "gray") {
-            btn.onclick = () => window.open(m.url, "_blank");
+        // -----------------------------
+        // Gestion du clic (désactivé si niveau = 1)
+        // -----------------------------
+        if (m.level === 1) {
+            btn.disabled = true;                 // Désactive le bouton
+            btn.style.cursor = "not-allowed";    // Visuel interdit
+            btn.style.opacity = "0.6";           // Atténuation
         } else {
-            btn.disabled = true;
+            btn.onclick = () => window.open(m.url, "_blank");
         }
 
         aiButtons.appendChild(btn);
