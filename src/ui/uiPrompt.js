@@ -1,23 +1,33 @@
-// ===============================================================
-// uiPrompt.js — Gestion du champ prompt
-// ===============================================================
+// ======================================================================
+// uiPrompt.js — Gestion du prompt IA RCH
+// ======================================================================
 
 const MAX_PROMPT = 4000;
 
 export function initPromptUI() {
-  const p = document.getElementById("prompt_input");
-  const c = document.getElementById("prompt_count");
+    const input = document.getElementById("prompt_input");
+    const counter = document.getElementById("prompt_count");
 
-  p.addEventListener("input", () => {
-    const len = p.value.length;
-    c.textContent = `${len} / ${MAX_PROMPT}`;
+    if (!input || !counter) return;
 
-    if (len > MAX_PROMPT) {
-      p.value = p.value.substring(0, MAX_PROMPT);
-    }
-  });
+    input.addEventListener("input", () => {
+        if (input.value.length > MAX_PROMPT) {
+            input.value = input.value.slice(0, MAX_PROMPT);
+        }
+        counter.textContent = `${input.value.length} / ${MAX_PROMPT}`;
+    });
 }
 
 export function getPromptFromUI() {
-  return document.getElementById("prompt_input").value.trim();
+    const input = document.getElementById("prompt_input");
+    if (!input) throw new Error("Champ prompt introuvable.");
+    return input.value.trim();
+}
+
+export function resetPromptUI() {
+    const input = document.getElementById("prompt_input");
+    const counter = document.getElementById("prompt_count");
+
+    if (input) input.value = "";
+    if (counter) counter.textContent = `0 / ${MAX_PROMPT}`;
 }
