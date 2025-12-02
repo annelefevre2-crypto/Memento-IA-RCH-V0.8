@@ -5,8 +5,8 @@
   <title>Lecture QR – Mémento IA RCH</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- Styles ENSOSP -->
   <link rel="stylesheet" href="style.css">
-<div id="videoContainer" style="display:none;margin-top:15px;">
 
   <!-- Libs QR + Compression -->
   <script src="https://unpkg.com/pako@2.1.0/dist/pako.min.js"></script>
@@ -34,13 +34,16 @@
       <button id="btnStartCam" class="btn-add-var">🎥 Scanner via caméra</button>
       <button id="btnStopCam" class="btn-reset" disabled>Arrêter</button>
 
-      <div id="videoContainer" style="margin-top:15px;">
+      <!-- ⚠️ CORRECT : le container vidéo doit être ici, PAS dans le head -->
+      <div id="videoContainer" style="display:none;margin-top:15px;">
         <video id="qrVideo" style="width:100%;background:#000;border-radius:12px;"></video>
       </div>
 
       <h3>Ou importer une image</h3>
       <input type="file" id="qrFileInput" accept="image/*">
-      <pre id="qrRaw"></pre>
+
+      <!-- Ne plus afficher le QR brut -->
+      <pre id="qrRaw" style="display:none;"></pre>
     </section>
 
     <!-- ======================= META DÉCODÉES ====================== -->
@@ -77,6 +80,7 @@
 
   </main>
 
+  <!-- MODULE SCAN -->
   <script type="module" src="./src/ui/uiScan.js"></script>
 
 </body>
