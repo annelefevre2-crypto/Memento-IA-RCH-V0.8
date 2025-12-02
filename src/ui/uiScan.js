@@ -3,6 +3,7 @@
 // ======================================================================
 
 import { decodeFiche } from "../core/compression.js";
+import { fromCompact } from "../core/jsonSchema.js";
 
 // Elements UI
 const qrFileInput = document.getElementById("qrFileInput");
@@ -26,7 +27,7 @@ let scanner = null;
 let currentFiche = null;
 
 // ======================================================================
-// UTILITAIRES
+// UI UTILITIES
 // ======================================================================
 
 function hideScanSection() {
@@ -42,12 +43,12 @@ function showAllSectionsExceptScan() {
 
 function buildMetaHeader(meta) {
     metaHeader.innerHTML = `
-        <div class="meta-item"><b>Catégorie :</b> ${meta.categorie || "-"}</div>
-        <div class="meta-item"><b>Titre :</b> ${meta.titre || "-"}</div>
-        <div class="meta-item"><b>Objectif :</b> ${meta.objectif || "-"}</div>
-        <div class="meta-item"><b>Concepteur :</b> ${meta.concepteur || "-"}</div>
-        <div class="meta-item"><b>Date :</b> ${meta.date || "-"}</div>
-        <div class="meta-item"><b>Version :</b> ${meta.version || "1.0"}</div>
+        <div><b>Catégorie :</b> ${meta.categorie || "-"}</div>
+        <div><b>Titre :</b> ${meta.titre || "-"}</div>
+        <div><b>Objectif :</b> ${meta.objectif || "-"}</div>
+        <div><b>Concepteur :</b> ${meta.concepteur || "-"}</div>
+        <div><b>Date :</b> ${meta.date || "-"}</div>
+        <div><b>Version :</b> ${meta.version || "1.0"}</div>
     `;
 }
 
@@ -85,7 +86,7 @@ function buildVariablesUI(vars) {
         scanVariables.appendChild(block);
     });
 
-    // Gestion acquisition geoloc
+    // Boutons GPS
     document.querySelectorAll("[data-geo]").forEach(btn => {
         btn.onclick = () => {
             const id = btn.dataset.geo;
@@ -116,7 +117,7 @@ function collectVariableValues(vars) {
     return out;
 }
 
-function buildAIButtons(meta, prompt) {
+function buildAIButtons(ai, prompt) {
     aiButtons.innerHTML = "";
 
     const encoded = encodeURIComponent(prompt);
@@ -124,18 +125,18 @@ function buildAIButtons(meta, prompt) {
     const MODELS = [
         {
             label: "ChatGPT",
-            level: Number(meta.chatgpt || 1),
+            level: Number(ai.chatgpt || 1),
             url: `https://chat.openai.com/?q=${encoded}`
         },
         {
             label: "Perplexity",
-            level: Number(meta.perplexity || 1),
+            level: Number(ai.perplexity || 1),
             url: `https://www.perplexity.ai/search?q=${encoded}`
         },
         {
             label: "Mistral AI",
-            level: Number(meta.mistral || 1),
-            url: `https://chat.mistral.ai/chat?q=${encoded}`   // URL corrigée
+            level: Number(ai.mistral || 1),
+            url: `https://chat.mistral.ai/chat?q=${encoded}`
         }
     ];
 
@@ -143,22 +144,18 @@ function buildAIButtons(meta, prompt) {
         const btn = document.createElement("button");
         btn.className = "btn-ia";
 
-        // -----------------------------
-        // Couleur selon niveau de confiance
-        // -----------------------------
-        if (m.level === 3) btn.style.background = "#2ecc71";   // Vert
-        else if (m.level === 2) btn.style.background = "#f1c40f"; // Orange
-        else btn.style.background = "#bdc3c7";                // Gris
+        // couleur selon indice de confiance
+        btn.style.background =
+            m.level === 3 ? "#2ecc71" :
+            m.level === 2 ? "#f1c40f" :
+            "#bdc3c7";
 
         btn.textContent = m.label;
 
-        // -----------------------------
-        // Gestion du clic (désactivé si niveau = 1)
-        // -----------------------------
         if (m.level === 1) {
-            btn.disabled = true;                 // Désactive le bouton
-            btn.style.cursor = "not-allowed";    // Visuel interdit
-            btn.style.opacity = "0.6";           // Atténuation
+            btn.disabled = true;
+            btn.style.cursor = "not-allowed";
+            btn.style.opacity = "0.6";
         } else {
             btn.onclick = () => window.open(m.url, "_blank");
         }
@@ -180,7 +177,8 @@ if (qrFileInput) {
             const text = await window.QrScanner.scanImage(file);
             qrRaw.textContent = text;
 
-            currentFiche = decodeFiche(text);
+            const raw = decodeFiche(text);
+            currentFiche = fromCompact(raw);
 
             hideScanSection();
             showAllSectionsExceptScan();
@@ -206,7 +204,8 @@ if (btnStart) {
             videoContainer.style.display = "none";
             scanner.stop();
 
-            currentFiche = decodeFiche(result);
+            const raw = decodeFiche(result);
+            currentFiche = fromCompact(raw);
 
             hideScanSection();
             showAllSectionsExceptScan();
@@ -238,11 +237,11 @@ btnBuild.onclick = () => {
     if (!currentFiche) return;
 
     const vars = collectVariableValues(currentFiche.prompt.variables);
-
     let prompt = currentFiche.prompt.base;
 
     Object.keys(vars).forEach(k => {
         const v = vars[k];
+
         if (typeof v === "object") {
             prompt = prompt.replaceAll(`{{${k}}}`, `${v.lat}, ${v.lon}`);
         } else {
@@ -250,15 +249,13 @@ btnBuild.onclick = () => {
         }
     });
 
-    // Ajout des informations complémentaires
     if (extraInput.value.trim() !== "") {
         prompt += `\n\nInformations complémentaires :\n${extraInput.value.trim()}`;
     }
 
     promptResult.textContent = prompt;
 
-    // Générer les boutons IA
-    buildAIButtons(currentFiche.meta, prompt);
+    buildAIButtons(currentFiche.ai, prompt);
 };
 
 // ======================================================================
