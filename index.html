@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mémento IA – RCH | Création de fiche</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Police Inter -->
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+
+  <!-- Styles ENSOSP -->
+  <link rel="stylesheet" href="style-create.css" />
+
+  <!-- Pako + QR Writer -->
+  <script src="https://unpkg.com/pako@2.1.0/dist/pako.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<body>
+  <!-- ============================= -->
+  <!-- BARRE D’ONGLETS -->
+  <!-- ============================= -->
+  <nav class="tabs">
+    <a href="scan.html" class="tab">Lecture de fiche (Scan QR)</a>
+    <a class="tab active">Création de fiche</a>
+  </nav>
+
+  <main>
+    <h1 class="page-title">Création de fiche opérationnelle IA – RCH</h1>
+
+    <button id="btnReset" class="btn-reset">🔄 Réinitialiser</button>
+
+    <!-- ============================= -->
+    <!-- SECTION METADONNÉES -->
+    <!-- ============================= -->
+    <section class="card">
+      <h2>Métadonnées de la fiche</h2>
+
+      <label>Catégorie
+        <input id="metaCategorie" type="text" placeholder="Ex : risque chimique - opérationnel">
+      </label>
+
+      <label>Titre de la fiche
+        <input id="metaTitre" type="text" placeholder="Ex : Guide d'analyse initiale">
+      </label>
+
+      <label>Objectif de la fiche
+        <input id="metaObjectif" type="text" placeholder="Ex : fournir un support d'analyse rapide">
+      </label>
+
+      <label>Nom du concepteur
+        <input id="metaConcepteur" type="text" placeholder="Ex : Cdt Tirelle">
+      </label>
+
+      <label>Date de mise à jour
+        <input id="metaDate" type="date">
+      </label>
+    </section>
+
+    <!-- ============================= -->
+    <!-- SECTION IA SCORES -->
+    <!-- ============================= -->
+    <section class="card">
+      <h2>Indices de confiance IA</h2>
+
+      <label>ChatGPT
+        <select id="aiChatGPT">
+          <option value="3">3 - Recommandée</option>
+          <option value="2">2 - Acceptable</option>
+          <option value="1">1 - Non recommandée</option>
+        </select>
+      </label>
+
+      <label>Perplexity
+        <select id="aiPerplexity">
+          <option value="3">3 - Recommandée</option>
+          <option value="2">2 - Acceptable</option>
+          <option value="1">1 - Non recommandée</option>
+        </select>
+      </label>
+
+      <label>Mistral
+        <select id="aiMistral">
+          <option value="3">3 - Recommandée</option>
+          <option value="2">2 - Acceptable</option>
+          <option value="1">1 - Non recommandée</option>
+        </select>
+      </label>
+    </section>
+
+    <!-- ============================= -->
+    <!-- SECTION VARIABLES -->
+    <!-- ============================= -->
+    <section class="card">
+      <h2>Variables (max. 10)</h2>
+
+      <div id="variablesContainer" class="var-container"></div>
+
+      <button id="btnAddVariable" class="btn-add-var">➕ Ajouter une variable</button>
+    </section>
+
+    <!-- ============================= -->
+    <!-- SECTION PROMPT -->
+    <!-- ============================= -->
+    <section class="card">
+      <h2>Prompt de la fiche</h2>
+      <p class="helper">Utilisez les identifiants des variables entre <strong>{{ }}</strong><br>Exemple : <code>{{code_onu}}</code></p>
+
+      <textarea id="promptText" rows="10" maxlength="4000" placeholder="Rédigez le prompt ici…"></textarea>
+      <div id="promptCounter" class="counter">0 / 4000</div>
+    </section>
+
+    <!-- ============================= -->
+    <!-- GENERATION -->
+    <!-- ============================= -->
+    <section class="card">
+      <button id="btnGenerate" class="btn-generate">Générer le JSON + QR code</button>
+      <div id="qrContainer" class="qr-box"></div>
+    </section>
+
+  </main>
+
+  <!-- ======================================== -->
+  <!-- IMPORT MODULE UI -->
+  <!-- ======================================== -->
+  <script type="module" src="./src/ui/createFiche.js"></script>
+
+</body>
+</html>
