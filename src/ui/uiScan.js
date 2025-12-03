@@ -70,12 +70,14 @@ function onFicheDecoded(fiche) {
 
   // 2) Remplir les métadonnées
   if (metaHeader) {
+    metaHeader.style.display = "block"; // ✅ CORRECTION : Afficher le bloc
     metaHeader.innerHTML = `
       <h3>${fiche.meta?.titre || "Titre inconnu"}</h3>
-      <p><b>Catégorie :</b> ${fiche.meta?.categorie || "-"}</p>
-      <p><b>Objectif :</b> ${fiche.meta?.objectif || "-"}</p>
-      <p><b>Mis à jour le :</b> ${fiche.meta?.date || "-"}</p>
-      <p><b>Concepteur :</b> ${fiche.meta?.concepteur || "-"}</p>
+      <div class="meta-line"><b>Catégorie :</b> ${fiche.meta?.categorie || "-"}</div>
+      <div class="meta-line"><b>Objectif :</b> ${fiche.meta?.objectif || "-"}</div>
+      <div class="meta-line"><b>Concepteur :</b> ${fiche.meta?.concepteur || "-"}</div>
+      <div class="meta-line"><b>Version :</b> ${fiche.meta?.version || "1.0"}</div>
+      <div class="meta-line"><b>Mis à jour le :</b> ${fiche.meta?.date || "-"}</div>
     `;
   }
 
