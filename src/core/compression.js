@@ -1,17 +1,19 @@
 // ======================================================
 // compression.js — Version optimisée pako + Base64
+// Version corrigée : validation préventive + meilleure gestion erreurs
 // ======================================================
 
 import { toCompact, fromCompact } from "./jsonSchema.js";
 
 const WRAPPER_VERSION = "p1";
 const MAX_JSON_CHARS = 5000;
+const WARN_JSON_CHARS = 3500; // Seuil d'alerte
 
 // ------------------------------------------------------
 // Helpers Base64 <-> Uint8Array (optimisés)
 // ------------------------------------------------------
 function uint8ToBase64(u8) {
-  // encode en blocs pour éviter les stacks overflow
+  // Encode en blocs pour éviter les stack overflow
   let binary = "";
   const CHUNK = 0x8000;
 
@@ -34,22 +36,70 @@ function base64ToUint8(b64) {
 }
 
 // ------------------------------------------------------
+// Validation AVANT compression
+// ------------------------------------------------------
+function validateFicheBeforeCompression(fiche) {
+  // Vérification structure minimale
+  if (!fiche.meta) {
+    throw new Error("Métadonnées manquantes (meta)");
+  }
+  if (!fiche.prompt || !fiche.prompt.base) {
+    throw new Error("Prompt de base manquant (prompt.base)");
+  }
+  if (!Array.isArray(fiche.prompt.variables)) {
+    throw new Error("Variables manquantes ou invalides (prompt.variables)");
+  }
+
+  // Estimation de la taille JSON AVANT compactage
+  const rawJSON = JSON.stringify(fiche);
+  if (rawJSON.length > MAX_JSON_CHARS) {
+    throw new Error(
+      `Fiche trop volumineuse : ${rawJSON.length} caractères (max ${MAX_JSON_CHARS}). ` +
+      `Réduisez le prompt ou le nombre de variables.`
+    );
+  }
+
+  return true;
+}
+
+// ------------------------------------------------------
 // Encodage Fiche → Wrapper compressé
 // ------------------------------------------------------
 export function encodeFiche(fiche) {
-  if (!window.pako) throw new Error("pako n'est pas chargé");
+  if (!window.pako) {
+    throw new Error("❌ Librairie pako non chargée. Vérifiez le <script> dans le HTML.");
+  }
+
+  // ✅ CORRECTION : validation AVANT compression
+  try {
+    validateFicheBeforeCompression(fiche);
+  } catch (e) {
+    console.error("❌ Validation échouée :", e);
+    throw e;
+  }
 
   // 1) JSON compact (structure minimale)
   const jsonString = JSON.stringify(toCompact(fiche));
+  console.log("📏 Taille JSON compacté :", jsonString.length, "caractères");
 
-  if (jsonString.length > MAX_JSON_CHARS) {
-    throw new Error(`JSON trop long (${jsonString.length}) > ${MAX_JSON_CHARS}`);
+  if (jsonString.length > WARN_JSON_CHARS) {
+    console.warn(
+      `⚠️ JSON volumineux (${jsonString.length} caractères). ` +
+      `Le QR Code sera dense et difficile à scanner.`
+    );
   }
 
   // 2) UTF-8 + Compression + Base64
-  const utf8 = new TextEncoder().encode(jsonString);
-  const compressed = window.pako.deflate(utf8, { level: 9 }); // meilleure compression
-  const b64 = uint8ToBase64(compressed);
+  let utf8, compressed, b64;
+
+  try {
+    utf8 = new TextEncoder().encode(jsonString);
+    compressed = window.pako.deflate(utf8, { level: 9 }); // meilleure compression
+    b64 = uint8ToBase64(compressed);
+  } catch (e) {
+    console.error("❌ Erreur compression pako :", e);
+    throw new Error("Erreur lors de la compression : " + e.message);
+  }
 
   const wrapper = { z: WRAPPER_VERSION, d: b64 };
 
@@ -59,7 +109,8 @@ export function encodeFiche(fiche) {
     stats: {
       jsonLength: jsonString.length,
       deflated: compressed.length,
-      base64: b64.length
+      base64: b64.length,
+      wrapperTotal: JSON.stringify(wrapper).length
     }
   };
 }
@@ -68,52 +119,84 @@ export function encodeFiche(fiche) {
 // Normalisation du wrapper (sécurisé + simplifié)
 // ------------------------------------------------------
 function normaliseWrapper(raw) {
-  if (!raw) throw new Error("QR vide");
+  if (!raw) {
+    throw new Error("❌ QR Code vide ou illisible");
+  }
 
   // Cas : déjà un objet
   if (typeof raw === "object") {
-    if (!raw.d) throw new Error("Wrapper JSON invalide : champ 'd' manquant");
+    if (!raw.d) {
+      console.error("Wrapper reçu :", raw);
+      throw new Error("Wrapper JSON invalide : champ 'd' manquant");
+    }
     return raw;
   }
 
   // Cas : string
-  if (typeof raw !== "string") throw new Error("QR non reconnu");
+  if (typeof raw !== "string") {
+    throw new Error("QR Code non reconnu (type invalide)");
+  }
 
-  const t = raw.trim();
+  const trimmed = raw.trim();
 
   // On tente JSON
   try {
-    const parsed = JSON.parse(t);
+    const parsed = JSON.parse(trimmed);
     if (parsed?.d) return parsed;
-  } catch (_) {}
+  } catch (e) {
+    console.warn("⚠️ Pas un JSON valide, tentative format legacy...");
+  }
 
   // Cas legacy : le QR contient directement la base64
-  return { z: "legacy", d: t };
+  return { z: "legacy", d: trimmed };
 }
 
 // ------------------------------------------------------
 // Décodage Wrapper → fiche JSON reconstruite
 // ------------------------------------------------------
 export function decodeFiche(raw) {
-  if (!window.pako) throw new Error("pako n'est pas chargé");
+  if (!window.pako) {
+    throw new Error("❌ Librairie pako non chargée");
+  }
 
-  const wrapper = normaliseWrapper(raw);
+  let wrapper;
+  try {
+    wrapper = normaliseWrapper(raw);
+  } catch (e) {
+    console.error("❌ Erreur normalisation wrapper :", e);
+    throw e;
+  }
 
-  const compressed = base64ToUint8(wrapper.d);
+  let compressed;
+  try {
+    compressed = base64ToUint8(wrapper.d);
+  } catch (e) {
+    console.error("❌ Erreur décodage Base64 :", e);
+    throw new Error("QR Code corrompu (Base64 invalide)");
+  }
+
   let inflated;
-
   try {
     inflated = window.pako.inflate(compressed);
   } catch (e) {
-    throw new Error("Erreur DEFLATE : " + e.message);
+    console.error("❌ Erreur DEFLATE :", e);
+    throw new Error("QR Code corrompu (décompression échouée)");
   }
 
   let obj;
   try {
-    obj = JSON.parse(new TextDecoder().decode(inflated));
+    const jsonString = new TextDecoder().decode(inflated);
+    obj = JSON.parse(jsonString);
   } catch (e) {
-    throw new Error("JSON décompressé invalide : " + e.message);
+    console.error("❌ Erreur parsing JSON décompressé :", e);
+    throw new Error("QR Code invalide (JSON corrompu)");
   }
 
-  return fromCompact(obj);
+  // Reconstruction de la fiche complète
+  try {
+    return fromCompact(obj);
+  } catch (e) {
+    console.error("❌ Erreur reconstruction fiche :", e);
+    throw new Error("Structure de fiche invalide");
+  }
 }
