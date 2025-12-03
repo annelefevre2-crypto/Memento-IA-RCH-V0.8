@@ -184,6 +184,29 @@ textarea {
   margin-bottom: 15px;
 }
 
+.btn-reset-scan {
+  background: #ff9f1c;
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 16px;
+  box-shadow: 0 4px 10px rgba(255, 159, 28, 0.3);
+  transition: all 0.2s;
+}
+
+.btn-reset-scan:hover {
+  background: #ff8800;
+  box-shadow: 0 6px 14px rgba(255, 159, 28, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-reset-scan:active {
+  transform: translateY(0);
+}
+
 .btn-add-var {
   width: 100%;
   background: #e5e8ff;
