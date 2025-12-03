@@ -1,14 +1,12 @@
 // ======================================================================
-// createFiche.js — Module principal de l’onglet création de fiche IA RCH
+// createFiche.js — Module principal de l'onglet création de fiche IA RCH
+// Version corrigée : ajout des indices IA + validation renforcée
 // ======================================================================
 
-// Import des sous-modules UI
 import { initVariablesUI, getVariablesFromUI } from "./uiVariables.js";
 import { getMetaFromUI, resetMetaUI } from "./uiMeta.js";
 import { getPromptFromUI, resetPromptUI } from "./uiPrompt.js";
 import { resetConfidenceIndexes } from "./uiReset.js";
-
-// Import du moteur JSON + QR
 import { encodeFiche } from "../core/compression.js";
 import { generateQrForFiche } from "../core/qrWriter.js";
 
@@ -26,16 +24,38 @@ document.addEventListener("DOMContentLoaded", () => {
         dateField.value = today;
     }
 
-    // Initialise l’UI Variables
+    // Initialise l'UI Variables
     initVariablesUI();
 
     // Bouton principal : Générer JSON + QR
-    document.getElementById("btnGenerate").addEventListener("click", onGenerate);
+    const btnGenerate = document.getElementById("btnGenerate");
+    if (btnGenerate) {
+        btnGenerate.addEventListener("click", onGenerate);
+    }
 
     // Bouton RESET
-    document.getElementById("btnReset").addEventListener("click", onReset);
+    const btnReset = document.getElementById("btnReset");
+    if (btnReset) {
+        btnReset.addEventListener("click", onReset);
+    }
 
 });
+
+
+// ================================================================
+// NOUVELLE FONCTION : Récupérer les indices IA
+// ================================================================
+function getAIIndicesFromUI() {
+    const chatgpt = document.getElementById("aiChatGPT");
+    const perplexity = document.getElementById("aiPerplexity");
+    const mistral = document.getElementById("aiMistral");
+
+    return {
+        chatgpt: chatgpt ? parseInt(chatgpt.value) : 3,
+        perplexity: perplexity ? parseInt(perplexity.value) : 3,
+        mistral: mistral ? parseInt(mistral.value) : 3
+    };
+}
 
 
 // ================================================================
@@ -44,28 +64,35 @@ document.addEventListener("DOMContentLoaded", () => {
 async function onGenerate() {
     console.log("🟦 Génération de la fiche demandée…");
 
-    let meta, vars, prompt;
+    let meta, vars, prompt, aiIndices;
 
     try {
         meta = getMetaFromUI();
         vars = getVariablesFromUI();
         prompt = getPromptFromUI();
+        aiIndices = getAIIndicesFromUI();
     }
     catch (e) {
-        alert("Erreur dans la saisie : " + e.message);
-        console.error(e);
+        alert("❌ Erreur dans la saisie : " + e.message);
+        console.error("Erreur saisie :", e);
         return;
     }
 
-    // Vérification taille du prompt
+    // Vérification prompt
+    if (!prompt) {
+        alert("⚠️ Le prompt ne peut pas être vide !");
+        return;
+    }
+
     if (prompt.length > 4000) {
-        alert("Le prompt dépasse 4000 caractères !");
+        alert("❌ Le prompt dépasse 4000 caractères !");
         return;
     }
 
-    // Construction JSON final
+    // Construction JSON final (AVEC indices IA)
     const fiche = {
         meta,
+        ai: aiIndices,  // ✅ CORRECTION : ajout des indices
         prompt: {
             base: prompt,
             variables: vars
@@ -78,26 +105,46 @@ async function onGenerate() {
     let encoded;
     try {
         encoded = encodeFiche(fiche);
+        console.log("📊 Stats compression :", encoded.stats);
+
+        // ⚠️ Vérification taille finale
+        if (encoded.stats.base64 > 2900) {
+            const confirm = window.confirm(
+                `⚠️ Attention : QR volumineux (${encoded.stats.base64} caractères).\n` +
+                `Il pourrait être difficile à scanner.\n\n` +
+                `Voulez-vous continuer ?`
+            );
+            if (!confirm) return;
+        }
     }
     catch (err) {
-        alert("Erreur compression : " + err.message);
-        console.error(err);
+        alert("❌ Erreur compression : " + err.message);
+        console.error("Erreur compression :", err);
         return;
     }
 
-    console.log("📚 Fiche compressée :", encoded);
-
     // Génération QR
     const qrContainer = document.getElementById("qrContainer");
-    qrContainer.innerHTML = "";
+    if (qrContainer) {
+        qrContainer.innerHTML = "<p>⏳ Génération du QR Code...</p>";
 
-    try {
-        generateQrForFiche(fiche, "qrContainer");
-        console.log("🎉 QR généré !");
-    }
-    catch (err) {
-        alert("Erreur génération QR : " + err.message);
-        console.error(err);
+        try {
+            const result = generateQrForFiche(fiche, "qrContainer");
+            console.log("🎉 QR généré ! Taille :", result.qrSize, "px");
+            
+            // Ajout d'un message de succès
+            const successMsg = document.createElement("p");
+            successMsg.style.color = "#1dbf65";
+            successMsg.style.fontWeight = "600";
+            successMsg.style.marginTop = "15px";
+            successMsg.textContent = "✅ QR Code généré avec succès !";
+            qrContainer.appendChild(successMsg);
+        }
+        catch (err) {
+            alert("❌ Erreur génération QR : " + err.message);
+            console.error("Erreur QR :", err);
+            qrContainer.innerHTML = "<p style='color:#ff4d4d;'>❌ Erreur lors de la génération</p>";
+        }
     }
 }
 
@@ -106,6 +153,9 @@ async function onGenerate() {
 // RESET COMPLET
 // ================================================================
 function onReset() {
+    const confirm = window.confirm("⚠️ Voulez-vous vraiment tout réinitialiser ?");
+    if (!confirm) return;
+
     console.log("🔄 Réinitialisation complète demandée");
 
     // 1. Métadonnées
