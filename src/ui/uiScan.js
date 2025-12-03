@@ -3,6 +3,11 @@
 // ======================================================
 
 import { decodeFiche } from "../core/compression.js";
+import { fullReset } from "./uiFullReset.js";
+
+const btnScanReset = document.getElementById("btnScanReset");
+if (btnScanReset) btnScanReset.onclick = fullReset;
+
 
 window.addEventListener("qr-text-found", (ev) => {
   try {
