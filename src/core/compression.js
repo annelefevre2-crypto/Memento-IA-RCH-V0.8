@@ -1,5 +1,5 @@
 // ======================================================
-// compression.js — Version optimisée pako + Base64
+// compression.js — Version optimisée pako + Base64 + wrapper strict
 // ======================================================
 
 import { toCompact, fromCompact } from "./jsonSchema.js";
@@ -8,100 +8,77 @@ const WRAPPER_VERSION = "p1";
 const MAX_JSON_CHARS = 5000;
 
 // ------------------------------------------------------
-// Helpers Base64 <-> Uint8Array (optimisés)
+// Helpers Base64 <-> Uint8Array
 // ------------------------------------------------------
 function uint8ToBase64(u8) {
-  // encode en blocs pour éviter les stacks overflow
   let binary = "";
   const CHUNK = 0x8000;
-
   for (let i = 0; i < u8.length; i += CHUNK) {
-    binary += String.fromCharCode.apply(
-      null,
-      u8.subarray(i, i + CHUNK)
-    );
+    binary += String.fromCharCode.apply(null, u8.subarray(i, i + CHUNK));
   }
   return btoa(binary);
 }
 
 function base64ToUint8(b64) {
-  const binary = atob(b64);
-  const len = binary.length;
-  const out = new Uint8Array(len);
-
-  for (let i = 0; i < len; i++) out[i] = binary.charCodeAt(i);
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }
 
 // ------------------------------------------------------
-// Encodage Fiche → Wrapper compressé
+// Encodage
 // ------------------------------------------------------
 export function encodeFiche(fiche) {
   if (!window.pako) throw new Error("pako n'est pas chargé");
 
-  // 1) JSON compact (structure minimale)
   const jsonString = JSON.stringify(toCompact(fiche));
 
   if (jsonString.length > MAX_JSON_CHARS) {
     throw new Error(`JSON trop long (${jsonString.length}) > ${MAX_JSON_CHARS}`);
   }
 
-  // 2) UTF-8 + Compression + Base64
   const utf8 = new TextEncoder().encode(jsonString);
-  const compressed = window.pako.deflate(utf8, { level: 9 }); // meilleure compression
+  const compressed = window.pako.deflate(utf8, { level: 9 });
   const b64 = uint8ToBase64(compressed);
 
-  const wrapper = { z: WRAPPER_VERSION, d: b64 };
-
   return {
-    wrapper,
-    wrapperString: JSON.stringify(wrapper),
-    stats: {
-      jsonLength: jsonString.length,
-      deflated: compressed.length,
-      base64: b64.length
-    }
+    wrapper: { z: WRAPPER_VERSION, d: b64 },
+    wrapperString: JSON.stringify({ z: WRAPPER_VERSION, d: b64 })
   };
 }
 
 // ------------------------------------------------------
-// Normalisation du wrapper (sécurisé + simplifié)
+// Validation stricte du wrapper
 // ------------------------------------------------------
-function normaliseWrapper(raw) {
-  if (!raw) throw new Error("QR vide");
+function normalizeWrapper(raw) {
+  if (!raw) throw new Error("QR vide ou invalide.");
 
-  // Cas : déjà un objet
-  if (typeof raw === "object") {
-    if (!raw.d) throw new Error("Wrapper JSON invalide : champ 'd' manquant");
-    return raw;
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      throw new Error("Le QR doit contenir un wrapper JSON valide.");
+    }
   }
 
-  // Cas : string
-  if (typeof raw !== "string") throw new Error("QR non reconnu");
+  if (typeof raw !== "object") throw new Error("Wrapper non reconnu.");
+  if (!raw.z || !raw.d) throw new Error("Wrapper invalide : champs 'z' ou 'd' manquants.");
+  if (raw.z !== WRAPPER_VERSION) throw new Error(`Version wrapper '${raw.z}' non supportée.`);
 
-  const t = raw.trim();
-
-  // On tente JSON
-  try {
-    const parsed = JSON.parse(t);
-    if (parsed?.d) return parsed;
-  } catch (_) {}
-
-  // Cas legacy : le QR contient directement la base64
-  return { z: "legacy", d: t };
+  return raw;
 }
 
 // ------------------------------------------------------
-// Décodage Wrapper → fiche JSON reconstruite
+// Décodage
 // ------------------------------------------------------
 export function decodeFiche(raw) {
   if (!window.pako) throw new Error("pako n'est pas chargé");
 
-  const wrapper = normaliseWrapper(raw);
-
+  const wrapper = normalizeWrapper(raw);
   const compressed = base64ToUint8(wrapper.d);
-  let inflated;
 
+  let inflated;
   try {
     inflated = window.pako.inflate(compressed);
   } catch (e) {
