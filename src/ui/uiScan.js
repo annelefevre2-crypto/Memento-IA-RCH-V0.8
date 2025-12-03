@@ -43,11 +43,11 @@ function onFicheDecoded(fiche) {
 
   // 2) Remplir les métadonnées
   metaHeader.innerHTML = `
-    <h3>${fiche.meta?.titre || "Titre inconnu"}</h3>
-    <p><b>Catégorie :</b> ${fiche.meta?.categorie || "-"}</p>
-    <p><b>Objectif :</b> ${fiche.meta?.objectif || "-"}</p>
-    <p><b>Mis à jour le :</b> ${fiche.meta?.date || "-"}</p>
-    <p><b>Concepteur :</b> ${fiche.meta?.concepteur || "-"}</p>
+ <h3>${fiche.meta?.titre || fiche.meta?.T || "Titre inconnu"}</h3>
+<p><b>Catégorie :</b> ${fiche.meta?.categorie || "-"}</p>
+<p><b>Objectif :</b> ${fiche.meta?.objectif || "-"}</p>
+<p><b>Date :</b> ${fiche.meta?.date || "-"}</p>
+<p><b>Concepteur :</b> ${fiche.meta?.concepteur || "-"}</p>
   `;
 
   // 3) Générer les champs de variables
