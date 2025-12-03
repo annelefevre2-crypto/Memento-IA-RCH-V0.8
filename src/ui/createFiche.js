@@ -7,9 +7,6 @@ import { initVariablesUI, getVariablesFromUI } from "./uiVariables.js";
 import { getMetaFromUI, resetMetaUI } from "./uiMeta.js";
 import { getPromptFromUI, resetPromptUI } from "./uiPrompt.js";
 import { resetConfidenceIndexes } from "./uiReset.js";
-import { fullReset } from "./uiFullReset.js";
-document.getElementById("btnReset").onclick = fullReset;
-
 
 // Import du moteur JSON + QR
 import { encodeFiche } from "../core/compression.js";
